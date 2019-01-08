@@ -5,7 +5,6 @@ import src.library.*;
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 
-	@Override
 	public Action turn() {
 		turn++;
 

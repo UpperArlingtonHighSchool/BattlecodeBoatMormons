@@ -11,7 +11,7 @@ public class MyRobot extends BCAbstractRobot {
 
     	if (me.unit == SPECS.CASTLE)
     	{
-    		if(karbonite > 9000) {}
+    		if(karbonite >= 9001) {String lol = "memes";}
     	}
    
     	
