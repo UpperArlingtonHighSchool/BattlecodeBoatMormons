@@ -5,12 +5,13 @@ import src.library.*;
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 
-    public Action turn() {
+    @Override
+	public Action turn() {
     	turn++;
 
     	if (me.unit == SPECS.CASTLE)
     	{
-    		if(karbonite == 5) {}
+    		if(karbonite > 9000) {}
     	}
    
     	

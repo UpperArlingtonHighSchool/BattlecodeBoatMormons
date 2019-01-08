@@ -2,9 +2,10 @@ package src.exampleFuncPlayer;
 
 import src.library.*;
 
-pub;lic class MyRobot extends BCAbstractRobot {
+public class MyRobot extends BCAbstractRobot {
 	public int turn;
 
+	@Override
 	public Action turn() {
 		turn++;
 
