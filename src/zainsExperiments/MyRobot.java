@@ -10,7 +10,7 @@ public class MyRobot extends BCAbstractRobot {
 
     	if (me.unit == SPECS.CASTLE)
     	{
-    		if(karbonite is a snail)
+    		if(karbonite == 5)
     	}
    
     	
