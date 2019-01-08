@@ -1,4 +1,4 @@
-package library;
+package src.library;
 
 public class Action {
 	int type;

@@ -1,6 +1,6 @@
-package bc19;
+package src.zainsExperiments;
 
-//import library.*;
+import src.library.*;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
@@ -10,7 +10,7 @@ public class MyRobot extends BCAbstractRobot {
 
     	if (me.unit == SPECS.CASTLE)
     	{
-    		if(karbonite == 5)
+    		if(karbonite == 5) {}
     	}
    
     	
