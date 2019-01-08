@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-<<<<<<< HEAD
 	<name>BoatMormons</name>
 	<comment></comment>
 	<projects>
@@ -15,27 +14,4 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-=======
-	<name>BattlecodeBoatMormons</name>
-	<comment></comment>
-	<projects>
-	</projects>
-	<buildSpec>
-		<buildCommand>
-			<name>org.eclipse.jdt.core.javabuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-	</buildSpec>
-	<natures>
-		<nature>org.eclipse.jdt.core.javanature</nature>
-	</natures>
-	<linkedResources>
-		<link>
-			<name>src/java</name>
-			<type>2</type>
-			<location>/Users/zain/Downloads/battlecode19-master/transpiler/java/src/main/java</location>
-		</link>
-	</linkedResources>
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BoatMormons.git
 </projectDescription>
