@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+<<<<<<< HEAD
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+=======
+	<classpathentry excluding="java/" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/Users/zain/Downloads/battlecode19-master/transpiler/java/src/main/java"/>
+>>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BoatMormons.git
 	<classpathentry kind="output" path="bin"/>
 </classpath>
