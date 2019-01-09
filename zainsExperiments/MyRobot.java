@@ -5,47 +5,50 @@ import src.library.*;
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 
-    @Override
 	public Action turn() {
     	turn++;
 
-    	if (me.unit == SPECS.CASTLE)
-    	{
-    		if(karbonite >= 9001) {String lol = "memes";}
-    	}
-   
-    	
-    	else if (me.unit == SPECS.CHURCH)
-    	{
-
-    	}
-    	
-    	
-    	else if (me.unit == SPECS.PILGRIM)
-    	{
-    		
-    	}
-    	
-    	
-    	else if (me.unit == SPECS.CRUSADER)
-    	{
-    		
-    	}
-    	
-    	
-    	else if (me.unit == SPECS.PROPHET)
-    	{
-    		
-    	}
-    	
-    	
-    	else if (me.unit == SPECS.PREACHER)
-    	{
-    		
-    	}
-    	
-    	
+    	if (me.unit == SPECS.CASTLE) { castle(); }
+    	else if (me.unit == SPECS.CHURCH) { church(); }
+    	else if (me.unit == SPECS.PILGRIM) { pilgrim(); }
+    	else if (me.unit == SPECS.CRUSADER) { crusader(); }
+    	else if (me.unit == SPECS.PROPHET) { prophet(); }
+    	else if (me.unit == SPECS.PREACHER) { preacher(); }
     	return null;
-
 	}
+    
+    public Action castle()
+    {
+    	
+    }
+    
+    
+    public Action church()
+    {
+    	
+    }
+    
+    
+    public Action pilgrim()
+    {
+    	
+    }
+    
+    
+    public Action crusader()
+    {
+    	
+    }
+    
+    
+    public Action prophet()
+    {
+    	
+    }
+    
+    
+    public Action preacher()
+    {
+    	
+    }
 }
