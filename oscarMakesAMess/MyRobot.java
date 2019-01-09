@@ -2,10 +2,14 @@ package bc19;
 
 import bc19.*;
 
-public class MyRobot {
+public class MyRobot extends BCAbstractRobot {
+	public static int counter;
 
-	public MyRobot() {
-		// TODO Auto-generated constructor stub
+	public Action turn() {
+		counter++;
+		if (me.unit == SPECS.CASTLE) {
+			log("Castle " + me.id + " says " + counter);
+		}
+		return null;
 	}
-
 }
