@@ -1,6 +1,6 @@
 package exampleFuncPlayer;
 
-import src.library.*;
+import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
