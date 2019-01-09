@@ -6,10 +6,17 @@ public class MyRobot extends BCAbstractRobot {
 	public static int counter;
 
 	public Action turn() {
-		counter++;
-		if (me.unit == SPECS.CASTLE) {
-			log("Castle " + me.id + " says " + counter);
+		switch (me.unit) {
+		case (SPECS.CASTLE):
+			break;
+		case (SPECS.CHURCH):
+			break;
+		case (SPECS.CRUSADER):
+			break;
+		case (SPECS.PILGRIM):
+			break;
+		case (SPECS.PREACHER):
+			break;
 		}
-		return null;
 	}
 }
