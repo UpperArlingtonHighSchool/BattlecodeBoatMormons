@@ -1,4 +1,4 @@
-package src.exampleFuncPlayer;
+package exampleFuncPlayer;
 
 import src.library.*;
 

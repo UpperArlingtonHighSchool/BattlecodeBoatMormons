@@ -1,4 +1,4 @@
-package src.library;
+package library;
 
 public class BCAbstractRobot {
 	Object gameState;

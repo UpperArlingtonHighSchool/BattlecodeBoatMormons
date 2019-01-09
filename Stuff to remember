@@ -1,0 +1,32 @@
+Battlecode repo: https://github.com/battlecode/battlecode19
+
+Our repo: https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons
+
+ExampleFuncsPlayer: https://github.com/npfoss/examplefuncsplayer/blob/master/bots/example_java/MyRobot.java
+
+
+
+Resource deposits are infinite
+
+"If the proposed trade is the same as the other team's last_offer,
+  a trade is performed, after which the last_offer of both teams will be nullified." - Specs
+  
+You can jump over walls
+
+Yellow is fuel, green is karbonite
+
+Swords is crusader; hat is pilgrim; target is prophet; tank is preacher
+
+The position of (x,y) in the karbonite map is karboniteMap[y][x]
+
+“@everyone if you update now, bc19run will save a replay even if you CRTL-C early, so you don't have to wait for games to finish.”
+
+“one thing that's also worth considering is your castles spawn with resources very close by
+i can describe how the mapgen does it
+it runs a bfs out from the castle to 5*(fuel + karb depots)
+and randomly puts them in that region -- if the castle is surround by lots of walls that region could be really long and skinny(edited)
+so i guess if there's a ton of fuel+karb you could have some resources pretty far away
+but empirically this is really rare
+usually it's like 2-4 away max” - Sydriax
+
+there are generated maps and apparently also dev generated maps according to a random dude on the Discord

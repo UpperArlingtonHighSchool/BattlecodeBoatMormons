@@ -1,4 +1,4 @@
-package src.zainsExperiments;
+package zainsExperiments;
 
 import src.library.*;
 
