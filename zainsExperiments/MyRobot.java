@@ -19,13 +19,13 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action castle()
     {
-    		return null;
+    	return null;
     }
     
     
     public Action church()
     {
-    		return null;
+    	return null;
     }
     
     
@@ -37,18 +37,18 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action crusader()
     {
-    		return null;
+    	return null;
     }
     
     
     public Action prophet()
     {
-    		return null;
+    	return null;
     }
     
     
     public Action preacher()
     {
-    		return null;
+    	return null;
     }
 }
