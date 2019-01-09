@@ -1,4 +1,4 @@
-package bc19.bots.example_java;
+package bc19;
 
 import bc19.*;
 

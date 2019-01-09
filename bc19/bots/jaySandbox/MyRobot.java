@@ -1,4 +1,4 @@
-package bc19.bots.jaySandbox;
+package bc19;
 
 import bc19.*;
 
