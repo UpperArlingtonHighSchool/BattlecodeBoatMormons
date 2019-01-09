@@ -4,7 +4,8 @@ import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
 	public static int counter;
-
+	
+	@Override
 	public Action turn() {
 		switch (me.unit) {
 		case (SPECS.CASTLE):
@@ -18,5 +19,9 @@ public class MyRobot extends BCAbstractRobot {
 		case (SPECS.PREACHER):
 			break;
 		}
+	}
+	
+	public int test() {
+		
 	}
 }
