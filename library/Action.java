@@ -5,7 +5,7 @@ public class Action {
 	int direction;
 	
 	public Action(int type, int direction) {
-		direction = direction;
-		type = type;
+		this.direction = direction;
+		this.type = type;
 	}
 }
