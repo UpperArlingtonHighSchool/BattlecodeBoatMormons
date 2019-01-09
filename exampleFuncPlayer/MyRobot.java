@@ -3,7 +3,7 @@ package exampleFuncPlayer;
 import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
-	public int turn;
+	private int turn;
 
 	public Action turn() {
 		turn++;
@@ -17,7 +17,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (me.unit == SPECS.PILGRIM) {
 			if (turn == 1) {
-				// log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
+				//log(Integer.toString([0][getVisibleRobots()[0].castle_talk]));
 			}
 		}
 		return null;
