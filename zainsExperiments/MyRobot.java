@@ -19,36 +19,36 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action castle()
     {
-    	
+    		return null;
     }
     
     
     public Action church()
     {
-    	
+    		return null;
     }
     
     
     public Action pilgrim()
     {
-    	
+    	return null;
     }
     
     
     public Action crusader()
     {
-    	
+    		return null;
     }
     
     
     public Action prophet()
     {
-    	
+    		return null;
     }
     
     
     public Action preacher()
     {
-    	
+    		return null;
     }
 }
