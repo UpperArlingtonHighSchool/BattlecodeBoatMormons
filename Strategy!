@@ -8,3 +8,5 @@ oh god rushes are terrifying
 
 We need some rush code so we can test defenses against it
 
+Free messages by self-signaling and having robots check all robots to see if they are signaling
+	Only 1 bit long, unless we take into account robot type

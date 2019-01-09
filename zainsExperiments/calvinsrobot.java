@@ -2,7 +2,7 @@ package zainsExperiments;
 
 import bc19.*;
 
-public class MyRobot extends BCAbstractRobot {
+public class calvinsrobot extends BCAbstractRobot {
 	public int turn;
 
 	public Action turn() {
