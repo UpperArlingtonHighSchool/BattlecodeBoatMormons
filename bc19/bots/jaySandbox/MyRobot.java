@@ -1,4 +1,4 @@
-package jayDoesNothingOfWorth;
+package bc19;
 
 import bc19.*;
 

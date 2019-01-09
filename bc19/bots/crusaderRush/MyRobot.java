@@ -1,4 +1,4 @@
-package crusaderRush;
+package bc19;
 
 import bc19.*;
 
