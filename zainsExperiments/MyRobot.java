@@ -8,12 +8,12 @@ public class MyRobot extends BCAbstractRobot {
 	public Action turn() {
     	turn++;
 
-    	if (me.unit == SPECS.CASTLE) { castle(); }
-    	else if (me.unit == SPECS.CHURCH) { church(); }
-    	else if (me.unit == SPECS.PILGRIM) { pilgrim(); }
-    	else if (me.unit == SPECS.CRUSADER) { crusader(); }
-    	else if (me.unit == SPECS.PROPHET) { prophet(); }
-    	else if (me.unit == SPECS.PREACHER) { preacher(); }
+    	if (me.unit == SPECS.CASTLE) { return castle(); }
+    	else if (me.unit == SPECS.CHURCH) { return church(); }
+    	else if (me.unit == SPECS.PILGRIM) { return pilgrim(); }
+    	else if (me.unit == SPECS.CRUSADER) { return crusader(); }
+    	else if (me.unit == SPECS.PROPHET) { return prophet(); }
+    	else if (me.unit == SPECS.PREACHER) { return preacher(); }
     	return null;
 	}
     
