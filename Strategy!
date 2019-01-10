@@ -10,3 +10,10 @@ We need some rush code so we can test defenses against it
 
 Free messages by self-signaling and having robots check all robots to see if they are signaling
 	Only 1 bit long, unless we take into account robot type
+	What if we have robots listen for more than one round -> more bits communicated
+	Or if we differentiate by type
+		pilgrims -> "I am in danger!"
+		crusaders -> "Nothing over here"
+		castles -> "I am in danger!"
+
+GiveAction costs 0 fuel, so pilgrim chains are indeed very good

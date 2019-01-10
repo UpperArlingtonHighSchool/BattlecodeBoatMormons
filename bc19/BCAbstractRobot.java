@@ -1,7 +1,7 @@
 package bc19;
 import java.util.ArrayList;
 
-public class BCAbstractRobot {
+public abstract class BCAbstractRobot {
 	public SpecHolder SPECS;
 	private GameState gameState;
 	private ArrayList<String> logs;
@@ -17,6 +17,8 @@ public class BCAbstractRobot {
 	public boolean[][] karboniteMap;
 	public boolean[][] fuelMap;
 
+	public abstract Action turn();
+	
 	public BCAbstractRobot() {
 		resetState();
 	}
@@ -230,9 +232,5 @@ public class BCAbstractRobot {
 	// Get a list of robots visible to you.
 	public Robot[] getVisibleRobots() {
 		return gameState.visible;
-	}
-
-	public Action turn() {
-		return null;
 	}
 }
