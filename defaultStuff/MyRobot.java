@@ -5,6 +5,10 @@ import java.util.ArrayList;
 
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
+	private final int IMPASSABLE = -1;
+	private final int PASSABLE = 0;
+	private final int KARBONITE = 1;
+	private final int FUEL = 2;
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 1, 2}; // 0: Castle, 1: Church, 2: Pilgrim, 3: Crusader, 4: Prophet,
 	private boolean hRefl; // true iff reflected horizontally				 5: Preacher. Feel free to mess with order in your robots.
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
@@ -101,19 +105,19 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				if(!m[i][j])
 				{
-					fullMap[i][j] = 1;
+					fullMap[i][j] = IMPASSABLE;
 				}
 				else if(k[i][j])
 				{
-					fullMap[i][j] = 2;
+					fullMap[i][j] = KARBONITE;
 				}
 				else if(f[i][j])
 				{
-					fullMap[i][j] = 3;
+					fullMap[i][j] = FUEL;
 				}
 				else
 				{
-					fullMap[i][j] = 0;
+					fullMap[i][j] = PASSABLE;
 				}
 			}
 		}
