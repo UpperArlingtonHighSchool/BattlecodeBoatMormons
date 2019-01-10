@@ -1,12 +1,6 @@
-<<<<<<< HEAD
+- Write crusader rush code
 
-- eliminte squiggily linees
-- delay the above step
-
-
-=======
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
-- Zain finish stuff
+- Defend against crusader rush code
 
 - Write method for attacking
 	- sort by robot type then ID
@@ -19,4 +13,4 @@
 	- develop and over-arching strategy
 	- run out of time for micro
 	
-- Write efficient method to determine symmetricality
+- Transcribe from lectures 2 and 3
