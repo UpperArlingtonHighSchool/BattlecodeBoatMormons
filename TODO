@@ -2,10 +2,6 @@
 
 - Defend against crusader rush code
 
-- Write method for attacking
-	- sort by robot type then ID
-		- reconsider hierarchy over time
-
 - Method for determining church placement; develop proletariat
 	- if within 9 pilgrim movements of a mine, have 2 pilgrims running back and forth
 
