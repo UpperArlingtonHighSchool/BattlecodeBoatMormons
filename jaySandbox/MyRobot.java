@@ -29,6 +29,23 @@ public class MyRobot extends BCAbstractRobot {
     }
     
     /*
+     * OUTPUT: ArrayList of all robots from robot's team that are within view and signalling
+     */
+    private ArrayList<Robot> checkRadio()
+    {
+    		ArrayList<Robot> robs = new ArrayList<Robot>();
+    		Robot[] robots = getVisibleRobots();
+    		for (Robot rob : robots)
+    		{
+    			if (rob.team == me.team && isRadioing(rob))
+    			{
+    				robs.add(rob);
+    			}
+    		}
+    		return robs;
+    }
+    
+    /*
      * INPUT:
      * - int range1: the minimum range (squared) to look for karbonite
      * - int range2: the maximum range (squared) to look for karbonite
@@ -162,7 +179,7 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action pilgrim()
     {
-    	return null;
+    		return null;
     }
     
     
