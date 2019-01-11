@@ -79,16 +79,16 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 			log("2</pilgrim>");
-			return findBestMove(me.x, me.y, HOME[0], HOME[1], SPECS.PILGRIM);
+			return findBestMove(HOME[0], HOME[1], SPECS.PILGRIM);
 		}
 		log("check 0");
 		if (fullMap[me.y][me.x] == KARBONITE) {
 			return mine();
 		}
-		int[] karbLocation = findClosestKarbo(me.x, me.y);
+		int[] karbLocation = findClosestKarbo();
 		log("karb found at ("+karbLocation[0]+", "+karbLocation[1]+")");
 		log("3</pilgrim>");
-		return findBestMove(me.x, me.y, karbLocation[0], karbLocation[1], SPECS.PILGRIM);
+		return findBestMove(karbLocation[0], karbLocation[1], SPECS.PILGRIM);
 	}
 
 	// makes fullMap
@@ -117,14 +117,14 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private int[] findClosestKarbo(int robotX, int robotY) {
+	private int[] findClosestKarbo() {
 		int minDistance = fullMap.length * fullMap.length;
 		int[] ans = new int[2];
 		for (int x = 0; x < fullMap[0].length; x++) {
 			for (int y = 0; y < fullMap.length; y++) {
 				if (fullMap[y][x] == KARBONITE && robotMap[y][x] == 0) {
-					int dx = x - robotX;
-					int dy = y - robotY;
+					int dx = x - me.x;
+					int dy = y - me.y;
 					if (dx * dx + dy * dy < minDistance) {
 						ans[0] = x;
 						ans[1] = y;
@@ -136,28 +136,28 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	private MoveAction findBestMove(int robotX, int robotY, int goalX, int goalY, int robotType) {
+	private MoveAction findBestMove(int goalX, int goalY, int robotType) {
 		log("finding moves");
 		ArrayList<int[]> possMoves = new ArrayList<>();
 		int radius = (int) Math.sqrt(SPECS.UNITS[robotType].SPEED);
-		int left = Math.max(0, robotX - radius);
-		int top = Math.max(0, robotY - radius);
-		int right = Math.min(fullMap[0].length, robotX + radius);
-		int bottom = Math.min(fullMap.length, robotY + radius);
+		int left = Math.max(0, me.x - radius);
+		int top = Math.max(0, me.y - radius);
+		int right = Math.min(fullMap[0].length, me.x + radius);
+		int bottom = Math.min(fullMap.length, me.y + radius);
 		for (int x = left; x <= right; x++) {
-			int dx = x - robotX;
+			int dx = x - me.x;
 			for (int y = top; y <= bottom; y++) {
-				int dy = y - robotY;
+				int dy = y - me.y;
 				if (dx * dx + dy * dy <= radius * radius && fullMap[y][x] > IMPASSABLE && robotMap[y][x] == 0) {
-					possMoves.add(new int[] { x, y });
+					possMoves.add(new int[] { dx, dy });
 				}
 			}
 		}
 		log("check check");
 		int minScore = 64*64;
 		for (int i = possMoves.size() - 1; i >= 0; i--) {
-			int dx = possMoves.get(i)[0] - goalX;
-			int dy = possMoves.get(i)[1] - goalY;
+			int dx = possMoves.get(i)[0];
+			int dy = possMoves.get(i)[1];
 			if (dx * dx + dy * dy > minScore) {
 				possMoves.remove(i);
 			} else if (dx * dx + dy * dy < minScore) {
@@ -171,8 +171,6 @@ public class MyRobot extends BCAbstractRobot {
 			log("wah wah wah");
 		}
 		int[] randomBest = possMoves.get((int) (Math.random() * possMoves.size()));
-		int dx = randomBest[0] - robotX;
-		int dy = randomBest[1] - robotY;
-		return move(dx, dy);
+		return move(randomBest[0], randomBest[1]);
 	}
 }
