@@ -199,6 +199,7 @@ public class MyRobot extends BCAbstractRobot {
 						log("found a move!");
 						return move(dx, dy);
 					}
+					
 					dy = -dy;
 					if (me.y + dy > -1 && me.y + dy < fullMap.length && fullMap[me.y + dy][me.x + dx] > IMPASSABLE
 							&& others[me.y + dy][me.x + dx] == 0) {
@@ -219,6 +220,7 @@ public class MyRobot extends BCAbstractRobot {
 						log("found a -move!");
 						return move(dx, dy);
 					}
+					
 					dy = -dy;
 					if (me.y + dy > -1 && me.y + dy < fullMap.length && fullMap[me.y + dy][me.x + dx] > IMPASSABLE
 							&& others[me.y + dy][me.x + dx] == 0) {
