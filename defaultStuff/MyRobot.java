@@ -190,7 +190,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		
-		else if(numCastles == 3) // Please check this over again, Zain
+		else if(numCastles == 3) // Please check this over again, Zain (yes I'm talking to myself)
 		{
 			int[] vals = new int[4];
 			int i = 0;
