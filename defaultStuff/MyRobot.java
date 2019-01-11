@@ -408,7 +408,7 @@ public class MyRobot extends BCAbstractRobot {
 		int[] finalBestLoc;
 		int[][] robMap = getVisibleRobotMap();
 		
-		for(Integer[] loc: goodLocs)
+		for(Integer[] loc : goodLocs) // Tiebreaks to attack single robot with lowest ID 
 		{
 			for(int dx = -1; dx <= 1; dx++)
 			{
