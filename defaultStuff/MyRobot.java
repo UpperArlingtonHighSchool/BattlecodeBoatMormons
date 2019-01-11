@@ -210,4 +210,221 @@ public class MyRobot extends BCAbstractRobot {
 		
 		return attack(getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y);
 	}
+
+	// For preacherAttack()
+	private Robot[] getPreacherKillableRobots() // Now returns only units with max health <= 20 in visibility range, but can be edited
+	{											//  to also return damaged units or units 1 space outside visibility range
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> killable = new ArrayList<Robot>();
+		
+		for(Robot rob : robs)
+		{
+			if(rob.team != me.team && (rob.unit == SPECS.PILGRIM || rob.unit == SPECS.PROPHET))
+			{
+				killable.add(rob);
+			}
+		}
+		
+		return killable.toArray(new Robot[killable.size()]);
+	}
+
+	// For preacherAttack()
+	private Robot[] getAllies() // Now returns only visible allies, but preachers can damage non-visible allies :(	plis update
+	{
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> allies = new ArrayList<Robot>();
+		
+		for(Robot rob : robs)
+		{
+			if(rob.team == me.team)
+			{
+				allies.add(rob);
+			}
+		}
+		
+		return allies.toArray(new Robot[allies.size()]);
+	}
+	
+	// For preacherAttack()
+	private Robot[] getEnemyRobots() // Does not return from outside of visibility range :(
+	{
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> enemies = new ArrayList<Robot>();
+		
+		for(Robot rob : robs)
+		{
+			if(rob.team != me.team && (rob.unit == SPECS.CRUSADER || rob.unit == SPECS.PREACHER))
+			{
+				enemies.add(rob);
+			}
+		}
+		
+		return enemies.toArray(new Robot[enemies.size()]);
+	}
+	
+	// For preacherAttack()
+	private Robot[] getEnemyBuildings() // Does not return from outside of visibility range :(
+	{									// Do not combine with other preacherAttack() helper methods. Ask Zain for elaboration if wanted.
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> buildings = new ArrayList<Robot>();
+		
+		for(Robot rob : robs)
+		{
+			if(rob.team != me.team && (rob.unit == SPECS.CASTLE || rob.unit == SPECS.CHURCH))
+			{
+				buildings.add(rob);
+			}
+		}
+		
+		return buildings.toArray(new Robot[buildings.size()]);
+	}
+	
+	// For preacherAttack()
+	private boolean squareContainsRobot(Robot rob, int centerX, int centerY) // 3x3 square
+	{
+		if(rob.x + 1 >= centerX && rob.x - 1 <= centerX && rob.y + 1 >= centerY && rob.y - 1 <= centerY)
+		{
+			return true;
+		}
+		return false;
+	}
+	
+	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill enemies, then damage
+	{									// enemy combat units, then damage enemy buildings
+		Robot[] killable = getPreacherKillableRobots();
+		Robot[] allies = getAllies();
+		
+		int[][] attackLocs = new int[9][9];
+		ArrayList<Integer[]> bestLocs = new ArrayList<Integer[]>();
+		bestLocs.add(new Integer[] {0, 0, -1});						// x, y, value
+		
+		for(int y = 0; y < 9; y++) // Killable units
+		{
+			for(int x = 0; x < 9; x++)
+			{
+				if(x == 3 && y > 2 && y < 6)
+				{
+					x += 3;
+				}
+				
+				attackLocs[y][x] = 0;
+				
+				for(Robot ally : allies)
+				{
+					if(squareContainsRobot(ally, x, y))
+					{
+						attackLocs[y][x] = -1;
+					}
+				}
+				
+				if(attackLocs[y][x] == 0)
+				{
+					for(Robot deathable: killable)
+					{
+						if(squareContainsRobot(deathable, x, y))
+						{
+							attackLocs[y][x] += 1;
+						}
+					}
+				}
+				
+				if(attackLocs[y][x] > bestLocs.get(0)[2])
+				{
+					bestLocs.clear();
+					bestLocs.add(new Integer[] {x, y, attackLocs[y][x]});
+				}
+				else if(attackLocs[y][x] == bestLocs.get(0)[2])
+				{
+					bestLocs.add(new Integer[] {x, y, attackLocs[y][x]});
+				}
+			}
+		}
+		if(bestLocs.size() == 1)
+		{
+			return attack(bestLocs.get(0)[0] - 4, bestLocs.get(0)[1] - 4);
+		}
+		
+		Robot[] combat = getEnemyRobots(); // write this to return all crusaders and preachers
+		ArrayList<Integer[]> bestbestLocs = new ArrayList<Integer[]>();
+		bestLocs.add(new Integer[] {0, 0, -1});						// x, y, new value
+		
+		for(Integer[] pos : bestLocs) // Tiebreakers based on most damage to other combat units
+		{
+			for(Robot rob : combat)
+			{
+				if(squareContainsRobot(rob, pos[0], pos[1]))
+				{
+					attackLocs[pos[1]][pos[0]] += 1;
+				}
+			}
+			
+			if(attackLocs[pos[1]][pos[0]] > bestbestLocs.get(0)[2])
+			{
+				bestbestLocs.clear();
+				bestbestLocs.add(new Integer[] {pos[0], pos[1], attackLocs[pos[1]][pos[0]]});
+			}
+			else if(attackLocs[pos[1]][pos[0]] == bestbestLocs.get(0)[2])
+			{
+				bestbestLocs.add(new Integer[] {pos[0], pos[1], attackLocs[pos[1]][pos[0]]});
+			}
+		}
+		
+		if(bestbestLocs.size() == 1)
+		{
+			return attack(bestbestLocs.get(0)[0] - 4, bestbestLocs.get(0)[1] - 4);
+		}
+		
+		Robot[] build = getEnemyBuildings(); // write this to return all castles and churches
+		ArrayList<Integer[]> goodLocs = new ArrayList<Integer[]>();
+		bestLocs.add(new Integer[] {0, 0, -1});						// x, y, new value
+		
+		for(Integer[] pos : bestbestLocs) // Tiebreakers based on most damage to other combat units
+		{
+			for(Robot rob : build)
+			{
+				if(squareContainsRobot(rob, pos[0], pos[1]))
+				{
+					attackLocs[pos[1]][pos[0]] += 1;
+				}
+			}
+			
+			if(attackLocs[pos[1]][pos[0]] > goodLocs.get(0)[2])
+			{
+				goodLocs.clear();
+				goodLocs.add(new Integer[] {pos[0], pos[1], attackLocs[pos[1]][pos[0]]});
+			}
+			else if(attackLocs[pos[1]][pos[0]] == goodLocs.get(0)[2])
+			{
+				goodLocs.add(new Integer[] {pos[0], pos[1], attackLocs[pos[1]][pos[0]]});
+			}
+		}
+		
+		if(goodLocs.size() == 1)
+		{
+			return attack(goodLocs.get(0)[0] - 4, goodLocs.get(0)[1] - 4);
+		}
+		
+		int lowestID = 4097;
+		int[] finalBestLoc;
+		int[][] robMap = getVisibleRobotMap();
+		
+		for(Integer[] loc: goodLocs)
+		{
+			for(int dx = -1; dx <= 1; dx++)
+			{
+				for(int dy = -1; dy <= 1; dy ++)
+				{
+					int ID = robMap[loc[1] + dy][loc[0] + dx]; 
+					
+					if(ID > 0 && ID < lowestID)
+					{
+						lowestID = ID;
+						finalBestLoc = new int[] {loc[0] + dx, loc[1] + dy};
+					}
+				}
+			}
+		}
+		
+		return attack(finalBestLoc[0] - 4, finalBestLoc[1] - 4);
+	}
 }
