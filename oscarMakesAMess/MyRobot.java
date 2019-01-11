@@ -6,6 +6,7 @@ import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
 	private int[][] fullMap;
+	private int[][] robotMap;
 	private final int IMPASSABLE = -1;
 	private final int PASSABLE = 0;
 	private final int KARBONITE = 1;
@@ -18,6 +19,7 @@ public class MyRobot extends BCAbstractRobot {
 			HOME = new int[] { me.x, me.y };
 			getFullMap();
 		}
+		robotMap = getVisibleRobotMap();
 		switch (me.unit) {
 		case 0: // castle
 			return castleAction();
@@ -39,7 +41,6 @@ public class MyRobot extends BCAbstractRobot {
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
 		}
-		int[][] robotMap = getVisibleRobotMap();
 		int buildX, buildY;
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {
@@ -60,21 +61,18 @@ public class MyRobot extends BCAbstractRobot {
 	private Action pilgrimAction() {
 		log("<pilgrim>");
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY) {
-			log("check 00");
-			int[][] robotMap = getVisibleRobotMap();
 			for (int dx = -1; dx <= 1; dx++) {
 				int testX = me.x + dx;
 				if (testX < 0 || testX > fullMap[0].length) {
 					continue;
 				}
-				log("check 0");
 				for (int dy = -1; dy <= 1; dy++) {
 					int testY = me.y + dy;
 					if (testY < 0 || testY > fullMap.length) {
 						continue;
 					}
 					log("check 1");
-					if (getRobot(robotMap[testY][testX]).unit == SPECS.CASTLE) {
+					if (robotMap[testY][testX] > 0 && getRobot(robotMap[testY][testX]).unit == SPECS.CASTLE) {
 						log("1</pilgrim>");
 						return give(dx, dy, me.karbonite, 0);
 					}
@@ -83,18 +81,14 @@ public class MyRobot extends BCAbstractRobot {
 			log("2</pilgrim>");
 			return findBestMove(me.x, me.y, HOME[0], HOME[1], SPECS.PILGRIM);
 		}
-
+		log("check 0");
 		if (fullMap[me.y][me.x] == KARBONITE) {
-			log("check 2.5");
 			return mine();
 		}
-		ArrayList<int[]> karbLocations = closestKarbInBounds(0, 100);
-		if (karbLocations.size() > 0) {
-			log("3</pilgrim>");
-			return findBestMove(me.x, me.y, karbLocations.get(0)[0], karbLocations.get(0)[1], SPECS.PILGRIM);
-		}
-		log("0</pilgrim>");
-		return null;
+		int[] karbLocation = findClosestKarbo(me.x, me.y);
+		log("karb found at ("+karbLocation[0]+", "+karbLocation[1]+")");
+		log("3</pilgrim>");
+		return findBestMove(me.x, me.y, karbLocation[0], karbLocation[1], SPECS.PILGRIM);
 	}
 
 	// makes fullMap
@@ -123,114 +117,62 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	/*
-	 * INPUT: - int range1: the minimum range (squared) to look for karbonite - int
-	 * range2: the maximum range (squared) to look for karbonite OUTPUT: an
-	 * ArrayList that is - empty if no such karbonite exists - consisting of one set
-	 * of { x,y } coordinates if one source of karbonite exists - consisting of
-	 * multiple sets of { x,y } coordinates if multiple sources of karbonite exists
-	 */
-	private ArrayList<int[]> closestKarbInBounds(int range1, int range2) {
-		int min = range1;
-		int max = range2;
-		ArrayList<int[]> karbs = new ArrayList<int[]>();
-		while (min != max) {
-			karbs = karbsInRange(min);
-			if (karbs.isEmpty()) {
-				min++;
-			} else {
-				return karbs;
-			}
-		}
-		return karbs;
-	}
-
-	private ArrayList<int[]> karbsInRange(int range) {
-		int rowInt = 0;
-		int colInt = 0;
-		ArrayList<int[]> karbs = new ArrayList<int[]>();
-		for (boolean[] row : karboniteMap) {
-			for (boolean col : row) {
-				if (isInRange(me.x, me.y, colInt, rowInt, range)) {
-					karbs.add(new int[] { colInt, rowInt });
+	private int[] findClosestKarbo(int robotX, int robotY) {
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans = new int[2];
+		for (int x = 0; x < fullMap[0].length; x++) {
+			for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == KARBONITE && robotMap[y][x] == 0) {
+					int dx = x - robotX;
+					int dy = y - robotY;
+					if (dx * dx + dy * dy < minDistance) {
+						ans[0] = x;
+						ans[1] = y;
+						minDistance = dx * dx + dy * dy;
+					}
 				}
-				colInt++;
 			}
-			rowInt++;
-			colInt = 0;
 		}
-		return karbs;
-	}
-
-	/*
-	 * INPUT: - int x1, y1: the x and y coordinates of the first space - int x2, y2:
-	 * the x and y coordinates of the second space - int range: the maximum distance
-	 * (squared) that the two spaces can be apart in order to return true OUTPUT:
-	 * true if the distance squared between the two coordinates are equal to or less
-	 * than range
-	 */
-	private boolean isInRange(int x1, int y1, int x2, int y2, int range) {
-		return range >= Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2);
+		return ans;
 	}
 
 	private MoveAction findBestMove(int robotX, int robotY, int goalX, int goalY, int robotType) {
-		int dirX = goalX - robotX;
-		int dirY = goalY - robotY;
-		int maxR = SPECS.UNITS[robotType].SPEED;
-		int[][] others = getVisibleRobotMap();
-		// goal: try dirX dirY, adjust slightly left, adjust slightly right, etc.
-		int magnitude = dirX * dirX + dirY * dirY;
-		if (magnitude > maxR) {
-			dirX = (int) (dirX / magnitude);
-			dirY = (int) (dirY / magnitude);
-			magnitude = dirX * dirX + dirY * dirY;
-		}
-		int dx, dy;
-		findMoves: for (int radiusSqrd = magnitude; radiusSqrd > 0; radiusSqrd--) {
-			log("radius: " + radiusSqrd);
-			for (int offset = 0;; offset++) {
-				dx = dirX + offset;
-
-				if (dx * dx <= maxR && me.x + dx > -1 && me.x + dx < fullMap[0].length) {
-
-					dy = (int) Math.sqrt(radiusSqrd - dx * dx);
-					if (me.y + dy > -1 && me.y + dy < fullMap.length && fullMap[me.y + dy][me.x + dx] > IMPASSABLE
-							&& others[me.y + dy][me.x + dx] == 0) {
-						log("found a move!");
-						return move(dx, dy);
-					}
-
-					dy = -dy;
-					if (me.y + dy > -1 && me.y + dy < fullMap.length && fullMap[me.y + dy][me.x + dx] > IMPASSABLE
-							&& others[me.y + dy][me.x + dx] == 0) {
-						log("found a move-!");
-						return move(dx, dy);
-					}
-				}
-
-				dx = dirX - offset;
-				if (dx * dx > maxR) {
-					continue findMoves;
-				}
-				if (me.x + dx > -1 && me.x + dx < fullMap[0].length) {
-
-					dy = (int) Math.sqrt(radiusSqrd - dx * dx);
-					if (me.y + dy > -1 && me.y + dy < fullMap.length && fullMap[me.y + dy][me.x + dx] > IMPASSABLE
-							&& others[me.y + dy][me.x + dx] == 0) {
-						log("found a -move!");
-						return move(dx, dy);
-					}
-
-					dy = -dy;
-					if (me.y + dy > -1 && me.y + dy < fullMap.length && fullMap[me.y + dy][me.x + dx] > IMPASSABLE
-							&& others[me.y + dy][me.x + dx] == 0) {
-						log("found a -move-!");
-						return move(dx, dy);
-					}
+		log("finding moves");
+		ArrayList<int[]> possMoves = new ArrayList<>();
+		int radius = (int) Math.sqrt(SPECS.UNITS[robotType].SPEED);
+		int left = Math.max(0, robotX - radius);
+		int top = Math.max(0, robotY - radius);
+		int right = Math.min(fullMap[0].length, robotX + radius);
+		int bottom = Math.min(fullMap.length, robotY + radius);
+		for (int x = left; x <= right; x++) {
+			int dx = x - robotX;
+			for (int y = top; y <= bottom; y++) {
+				int dy = y - robotY;
+				if (dx * dx + dy * dy <= radius * radius && fullMap[y][x] > IMPASSABLE && robotMap[y][x] == 0) {
+					possMoves.add(new int[] { x, y });
 				}
 			}
 		}
-		log("nada");
-		return null;
+		log("check check");
+		int minScore = 64*64;
+		for (int i = possMoves.size() - 1; i >= 0; i--) {
+			int dx = possMoves.get(i)[0] - goalX;
+			int dy = possMoves.get(i)[1] - goalY;
+			if (dx * dx + dy * dy > minScore) {
+				possMoves.remove(i);
+			} else if (dx * dx + dy * dy < minScore) {
+				for (int j = possMoves.size() - 1; j > i; j--) {
+					possMoves.remove(j);
+				}
+				minScore = dx * dx + dy * dy;
+			}
+		}
+		if (possMoves.size() == 0) {
+			log("wah wah wah");
+		}
+		int[] randomBest = possMoves.get((int) (Math.random() * possMoves.size()));
+		int dx = randomBest[0] - robotX;
+		int dy = randomBest[1] - robotY;
+		return move(dx, dy);
 	}
 }
