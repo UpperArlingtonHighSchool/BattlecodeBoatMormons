@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
+	private int numOfUnits = 0;
+	private int castleProduced = 0;
 	private int[][] fullMap;
 	private int[][] robotMap;
 	private final int IMPASSABLE = -1;
@@ -37,11 +39,25 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	private Action castleAction() {
+		log("castle pop: " + numOfUnits);
+		for (int[] row : robotMap) {
+			for (int id : row) {
+				if (id > 0 && getRobot(id).unit == SPECS.CASTLE) {
+					Robot castle = getRobot(id);
+					if (castle.team != me.team && castle.id != me.id) {
+						continue;
+					}
+					numOfUnits += castle.castle_talk;
+					castle.castle_talk = 0;
+				}
+			}
+		}
 		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
 		}
 		int buildX, buildY;
+		boolean haveNeighbors = false;
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {
 				if (dx == 0 && dy == 0) {
@@ -50,45 +66,66 @@ public class MyRobot extends BCAbstractRobot {
 				buildX = me.x + dx;
 				buildY = me.y + dy;
 				if (buildX > -1 && buildX < fullMap[0].length && buildY > -1 && buildY < fullMap.length
-						&& fullMap[buildY][buildX] > IMPASSABLE && robotMap[buildY][buildX] == 0) {
+						&& fullMap[buildY][buildX] > IMPASSABLE) {
+					if (robotMap[buildY][buildX] > 0) {
+						haveNeighbors = true;
+						continue;
+					}
+					numOfUnits++;
+					castleProduced++;
+						signal(numOfUnits, 2);
+						castleTalk(castleProduced);
 					return buildUnit(SPECS.PILGRIM, dx, dy);
 				}
 			}
+		}
+		if (haveNeighbors) {
+			signal(numOfUnits, 2);
 		}
 		return null;
 	}
 
 	private Action pilgrimAction() {
-		log("<pilgrim>");
-		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY) {
-			for (int dx = -1; dx <= 1; dx++) {
-				int testX = me.x + dx;
-				if (testX < 0 || testX > fullMap[0].length) {
+		Robot castle = null;
+		for (int dx = -1; dx <= 1; dx++) {
+			int testX = me.x + dx;
+			if (testX < 0 || testX > fullMap[0].length) {
+				continue;
+			}
+			for (int dy = -1; dy <= 1; dy++) {
+				int testY = me.y + dy;
+				if (testY < 0 || testY > fullMap.length) {
 					continue;
 				}
-				for (int dy = -1; dy <= 1; dy++) {
-					int testY = me.y + dy;
-					if (testY < 0 || testY > fullMap.length) {
-						continue;
-					}
-					log("check 1");
-					if (robotMap[testY][testX] > 0 && getRobot(robotMap[testY][testX]).unit == SPECS.CASTLE) {
-						log("1</pilgrim>");
-						return give(dx, dy, me.karbonite, 0);
+				if (robotMap[testY][testX] > 0 && getRobot(robotMap[testY][testX]).unit == SPECS.CASTLE) {
+					castle = getRobot(robotMap[testY][testX]);
+					if (isRadioing(castle)) {
+						numOfUnits = castle.signal;
 					}
 				}
 			}
-			log("2</pilgrim>");
-			return findBestMove(HOME[0], HOME[1], SPECS.PILGRIM);
 		}
-		log("check 0");
-		if (fullMap[me.y][me.x] == KARBONITE) {
+		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
+				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
+			if (castle != null) {
+				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
+			}
+			return findBestMove(HOME[0], HOME[1]);
+		}
+		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
+			log("is mining " + (fullMap[me.y][me.x] == KARBONITE ? "karbonite" : "fuel"));
 			return mine();
 		}
-		int[] karbLocation = findClosestKarbo();
-		log("karb found at ("+karbLocation[0]+", "+karbLocation[1]+")");
-		log("3</pilgrim>");
-		return findBestMove(karbLocation[0], karbLocation[1], SPECS.PILGRIM);
+		int[] location;
+		log("estimated pop: " + numOfUnits);
+		if (10 * numOfUnits > fuel) {
+			log("is finding fuel");
+			location = findClosestFuel();
+		} else {
+			log("is finding karbo");
+			location = findClosestKarbo();
+		}
+		return findBestMove(location[0], location[1]);
 	}
 
 	// makes fullMap
@@ -122,7 +159,7 @@ public class MyRobot extends BCAbstractRobot {
 		int[] ans = new int[2];
 		for (int x = 0; x < fullMap[0].length; x++) {
 			for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE && robotMap[y][x] == 0) {
+				if (fullMap[y][x] == KARBONITE && robotMap[y][x] <= 0) {
 					int dx = x - me.x;
 					int dy = y - me.y;
 					if (dx * dx + dy * dy < minDistance) {
@@ -136,10 +173,28 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	private MoveAction findBestMove(int goalX, int goalY, int robotType) {
-		log("finding moves");
+	private int[] findClosestFuel() {
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans = new int[2];
+		for (int x = 0; x < fullMap[0].length; x++) {
+			for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == FUEL && robotMap[y][x] <= 0) {
+					int dx = x - me.x;
+					int dy = y - me.y;
+					if (dx * dx + dy * dy < minDistance) {
+						ans[0] = x;
+						ans[1] = y;
+						minDistance = dx * dx + dy * dy;
+					}
+				}
+			}
+		}
+		return ans;
+	}
+
+	private MoveAction findBestMove(int goalX, int goalY) {
 		ArrayList<int[]> possMoves = new ArrayList<>();
-		int radius = (int) Math.sqrt(SPECS.UNITS[robotType].SPEED);
+		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
 		int left = Math.max(0, me.x - radius);
 		int top = Math.max(0, me.y - radius);
 		int right = Math.min(fullMap[0].length, me.x + radius);
@@ -149,15 +204,14 @@ public class MyRobot extends BCAbstractRobot {
 			for (int y = top; y <= bottom; y++) {
 				int dy = y - me.y;
 				if (dx * dx + dy * dy <= radius * radius && fullMap[y][x] > IMPASSABLE && robotMap[y][x] == 0) {
-					possMoves.add(new int[] { dx, dy });
+					possMoves.add(new int[] { x, y });
 				}
 			}
 		}
-		log("check check");
-		int minScore = 64*64;
+		int minScore = 64 * 64;
 		for (int i = possMoves.size() - 1; i >= 0; i--) {
-			int dx = possMoves.get(i)[0];
-			int dy = possMoves.get(i)[1];
+			int dx = possMoves.get(i)[0] - goalX;
+			int dy = possMoves.get(i)[1] - goalY;
 			if (dx * dx + dy * dy > minScore) {
 				possMoves.remove(i);
 			} else if (dx * dx + dy * dy < minScore) {
@@ -167,10 +221,7 @@ public class MyRobot extends BCAbstractRobot {
 				minScore = dx * dx + dy * dy;
 			}
 		}
-		if (possMoves.size() == 0) {
-			log("wah wah wah");
-		}
 		int[] randomBest = possMoves.get((int) (Math.random() * possMoves.size()));
-		return move(randomBest[0], randomBest[1]);
+		return move(randomBest[0] - me.x, randomBest[1] - me.y);
 	}
 }
