@@ -12,7 +12,8 @@ public class MyRobot extends BCAbstractRobot {
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 1, 2}; // 0: Castle, 1: Church, 2: Pilgrim, 3: Crusader, 4: Prophet,
 	private boolean hRefl; // true iff reflected horizontally				 5: Preacher. Feel free to mess with order in your robots.
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
-	private int numCastles = 1;
+	private int numCastles;
+	private int[][] castleLocs = new int[3][2];
 
 	public Action turn() {
 		turn++;
@@ -24,6 +25,8 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(me.unit == SPECS.CASTLE) // set numCastles
 			{
+				numCastles = 0; // b/c array returned by getVisibleRobots() contains me
+
 				for(Robot rob : getVisibleRobots())
 				{
 					if(rob.team == me.team)
@@ -65,7 +68,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action castle()
 	{
-		return null;
+		sendCastleLocs(2);
+		return buildUnit(SPECS.PILGRIM, (int) (Math.random() * 3) - 1, (int) (Math.random() * 3) - 1);
 	}
 
 
@@ -77,6 +81,20 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action pilgrim()
 	{
+		getCastleLocs();
+		log("" + numCastles);
+		String str  = "{";
+		for(int i = 0; i < numCastles; i++)
+		{
+			str += "{";
+			for(int j = 0; j < 2; j++)
+			{
+				str += castleLocs[i][j] + ", ";
+			}
+			str += "}, ";
+		}
+		str += "}";
+		log(str);
 		return null;
 	}
 
@@ -172,32 +190,99 @@ public class MyRobot extends BCAbstractRobot {
 		return true; // If it gets here, it's reflected both ways.
 	}
 
-	private void tellPilgrimCastles(int r2) // Whenever you make a pilgrim, call this. Will give
-	{		// how far away pilgrim has to be in each direction to be closer to other castle.
-		if(numCastles == 1)
+	private void getCastleLocs()
+	{
+		for(Robot rob : getVisibleRobots())
 		{
-			signal(0, r2);
-		}
+			if(rob.unit == SPECS.CASTLE && rob.team == me.team)
+			{
+				castleLocs[0] = new int[] {rob.x, rob.y};
 
-		else if(numCastles == 2)
+				if(isRadioing(rob))
+				{
+					if(hRefl)
+					{
+						castleLocs[1][1] = ((int) Math.floor(rob.signal / 2048)) * 2;
+						castleLocs[2][1] = ((int) Math.floor(rob.signal / 8) % 32) * 2;
+						
+						castleLocs[1][0] = ((int) Math.floor(rob.signal / 256) % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
+						castleLocs[2][0] = (rob.signal % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
+					}
+					else
+					{
+						castleLocs[1][0] = (int) Math.floor(rob.signal / 2048);
+						castleLocs[2][0] = (int) Math.floor(rob.signal / 8) % 32;
+					
+						castleLocs[1][1] = ((int) Math.floor(rob.signal / 256) % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
+						castleLocs[2][1] = (rob.signal % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
+					}
+
+					if(castleLocs[1][0] == castleLocs[2][0] && castleLocs[1][1] == castleLocs[2][1])
+					{
+						numCastles = 2;
+					}
+					else
+					{
+						numCastles = 3;
+					}
+				}
+				else
+				{
+					numCastles = 1;
+				}
+			}
+		}
+	}
+
+	private void sendCastleLocs(int r2) // Whenever you make a pilgrim, call this. Will give
+	{		// how far away pilgrim has to be in each direction to be closer to other castle.
+
+		if(numCastles == 2) // Does same as if there are 3, but gives same location twice.
 		{
+			int[] vals = new int[2];
+
 			for(Robot rob : getVisibleRobots())
 			{
 				if(rob.id != me.id && rob.team == me.team)
 				{
-					signal(rob.x * 128 + rob.y, r2); // Need to change so it won't overlap with if numCastles == 3?
+					if(hRefl) // Same thing for horizontal and vertical reflection
+					{
+						vals[0] = (int) Math.floor(me.y / 2);
+						if(me.x >= fullMap.length / 2) // Same thing for opposite sides of the map
+						{
+							vals[1] = (int) Math.floor((me.x - (int) Math.floor(fullMap.length / 2) - 8) / 2);
+						}
+						else
+						{
+							vals[1] = (int) Math.floor((me.x - 3) / 2);
+						}
+					}
+					else
+					{
+						vals[0] = (int) Math.floor(me.x / 2);
+						if(me.y >= fullMap.length / 2)
+						{
+							vals[1] = (int) Math.floor((me.y - (int) Math.floor(fullMap.length / 2) - 8) / 2);
+						}
+						else
+						{
+							vals[1] = (int) Math.floor((me.y - 3) / 2);
+						}
+					}
 				}
 			}
+
+			signal(vals[0] * 2048 + vals[1] * 256 + vals[0] * 8 + vals[1], r2);
 		}
-		
-		else if(numCastles == 3) // Please check this over again, Zain (yes I'm talking to myself)
+
+		else if(numCastles == 3)
 		{
 			int[] vals = new int[4];
 			int i = 0;
-			
+
 			for(Robot rob : getVisibleRobots())
 			{
-				if(rob.id != me.id && rob.team == me.team)
+				if(rob.id != me.id && rob.team == me.team && rob.unit == SPECS.CASTLE)
 				{
 					if(hRefl) // Same thing for horizontal and vertical reflection
 					{
@@ -223,14 +308,14 @@ public class MyRobot extends BCAbstractRobot {
 							vals[i + 1] = (int) Math.floor((me.y - 3) / 2);
 						}
 					}
-					i++;
+					i += 2;
 				}
 			}
-			
+
 			signal(vals[0] * 2048 + vals[1] * 256 + vals[2] * 8 + vals[3], r2);
 		}
-		
-		else
+
+		else if(numCastles != 1)
 		{
 			log("this is very bad numCastles is " + numCastles);
 		}
