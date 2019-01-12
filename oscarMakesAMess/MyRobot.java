@@ -5,7 +5,13 @@ import java.util.ArrayList;
 import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
+	private boolean isHorizReflection; // true means vertical axis of symm, false is opposite
+	private int castleIndex;
+	private int top;
+	private int left;
 	private int numOfUnits = 0;
+	private int[] castleIds;
+	private int[][] castleLocations;
 	private int[][] fullMap;
 	private int[][] robotMap;
 	private final int IMPASSABLE = -1;
@@ -37,6 +43,92 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	private Action castleAction() {
+		if (me.turn == 1) {
+			int numCastles = 0;
+			Robot[] robos = getVisibleRobots();
+			for (Robot r : robos) {
+				if (r.team == me.team) {
+					numCastles++;
+				}
+			}
+			int index = 0;
+			castleIds = new int[numCastles - 1];
+			for (Robot castle : robos) {
+				if (castle.team == me.team && castle.id != me.id) {
+					castleIds[index++] = castle.id;
+					log("castle " + castle.id + " found");
+				}
+			}
+			if (numCastles > 1) {
+				isHorizReflection = getReflectionDir();
+				// vertical axis of symm
+				if (isHorizReflection) {
+					if (me.x < fullMap[0].length / 2) {
+						left = 0;
+					} else {
+						left = (int) Math.ceil(fullMap[0].length / 2);
+					}
+					top = 0;
+				} else {
+					if (me.y < fullMap.length / 2) {
+						top = 0;
+					} else {
+						top = (int) Math.ceil(fullMap.length / 2);
+					}
+					left = 0;
+				}
+				int myXSquare = (int) ((me.x - left) / 3);
+				int myYSquare = (int) ((me.y - top) / 3);
+				int mySquareCode;
+				if (isHorizReflection) {
+					mySquareCode = myYSquare * ((int) ((fullMap[0].length / 2 - left - 1) / 3) + 1) + myXSquare;
+				} else {
+					mySquareCode = myYSquare * ((int) ((fullMap[0].length - left - 1) / 3) + 1) + myXSquare;
+				}
+				log("(" + me.x + ", " + me.y + ") -> [" + myXSquare + ", " + myYSquare + "] -> " + mySquareCode);
+				castleTalk(mySquareCode);
+			}
+			castleIndex = 0;
+			castleLocations = new int[castleIds.length][2];
+			for (int robotId : castleIds) {
+				int castleSquareCode = getRobot(robotId).castle_talk;
+				if (castleSquareCode == 0) {
+					continue;
+				}
+				int castleXSquare, castleYSquare;
+				if (isHorizReflection) {
+					castleYSquare = (int) (castleSquareCode / ((int) ((fullMap[0].length / 2 - 1) / 3) + 1));
+					castleXSquare = castleSquareCode % ((int) ((fullMap[0].length / 2 - 1) / 3) + 1);
+				} else {
+					castleYSquare = (int) (castleSquareCode / ((int) ((fullMap[0].length - 1) / 3) + 1));
+					castleXSquare = castleSquareCode % ((int) ((fullMap[0].length - 1) / 3) + 1);
+				}
+				log("There is castle at [" + castleXSquare + ", " + castleYSquare + "] = around (" + (3 * castleXSquare
+						+ 1) + ", " + (3 * castleYSquare + 1) + ")");
+				castleLocations[castleIndex][0] = castleXSquare;
+				castleLocations[castleIndex++][1] = castleYSquare;
+			}
+			return null;
+		} else if (me.turn == 2) {
+			for (int robotId : castleIds) {
+				int castleSquareCode = getRobot(robotId).castle_talk;
+				if (castleSquareCode == 0) {
+					continue;
+				}
+				int castleXSquare, castleYSquare;
+				if (isHorizReflection) {
+					castleYSquare = (int) (castleSquareCode / ((int) ((fullMap[0].length / 2 - 1) / 3) + 1));
+					castleXSquare = castleSquareCode % ((int) ((fullMap[0].length / 2 - 1) / 3) + 1);
+				} else {
+					castleYSquare = (int) (castleSquareCode / ((int) ((fullMap[0].length - 1) / 3) + 1));
+					castleXSquare = castleSquareCode % ((int) ((fullMap[0].length - 1) / 3) + 1);
+				}
+				log("There is castle at [" + castleXSquare + ", " + castleYSquare + "] = around (" + (3 * castleXSquare
+						+ 1) + ", " + (3 * castleYSquare + 1) + ")");
+				castleLocations[castleIndex][0] = castleXSquare;
+				castleLocations[castleIndex++][1] = castleYSquare;
+			}
+		}
 		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL - 2
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
@@ -112,18 +204,20 @@ public class MyRobot extends BCAbstractRobot {
 					if (robotMap[testY][testX] > 0) {
 						return give(dx, dy, me.karbonite, me.fuel);
 					}
-			if (fuel == 0) {
-				return null;
+					if (fuel == 0) {
+						return null;
+					}
+					return mine();
+				}
+				int[] location;
+				if (10 * numOfUnits > fuel) {
+					location = findClosestFuel();
+				} else {
+					location = findClosestKarbo();
+				}
+				return findBestMove(location[0], location[1], true);
 			}
-			return mine();
 		}
-		int[] location;
-		if (10 * numOfUnits > fuel) {
-			location = findClosestFuel();
-		} else {
-			location = findClosestKarbo();
-		}
-		return findBestMove(location[0], location[1], true);
 	}
 
 	public void getFullMap() {
@@ -149,6 +243,33 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
+	}
+
+	private boolean getReflectionDir() {
+		int top = (fullMap.length + 1) / 2;
+		int left = (fullMap[0].length + 1) / 2;
+
+		for (int i = 0; i < top; i++) {
+			for (int j = 0; j < left; j++) {
+				if (fullMap[i][j] != fullMap[fullMap.length - 1 - i][j]) {
+					return true;
+				} else if (fullMap[i][j] != fullMap[i][fullMap[0].length - 1 - j]) {
+					return false;
+				}
+			}
+		}
+
+		for (int i = fullMap.length; i > top; i--) {
+			for (int j = fullMap[0].length; j > left; j--) {
+				if (fullMap[i][j] != fullMap[fullMap.length - 1 - i][j]) {
+					return true;
+				} else if (fullMap[i][j] != fullMap[i][fullMap[0].length - 1 - j]) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	private int[] findClosestKarbo() {
