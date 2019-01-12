@@ -6,7 +6,6 @@ import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
 	private int numOfUnits = 0;
-	private int castleProduced = 0;
 	private int[][] fullMap;
 	private int[][] robotMap;
 	private final int IMPASSABLE = -1;
@@ -18,7 +17,6 @@ public class MyRobot extends BCAbstractRobot {
 	@Override
 	public Action turn() {
 		if (me.turn == 1) {
-			HOME = new int[] { me.x, me.y };
 			getFullMap();
 		}
 		robotMap = getVisibleRobotMap();
@@ -40,18 +38,17 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action castleAction() {
 		castleTalk(0);
-		log("CASTLE POPULATION: " + numOfUnits);
-		for (int[] row : robotMap) {
-			for (int id : row) {
-				if (id > 0 && getRobot(id).unit == SPECS.CASTLE) {
-					Robot castle = getRobot(id);
-					if (castle.team != me.team && castle.id != me.id) {
-						continue;
-					}
-					numOfUnits += castle.castle_talk;
+		for (Robot robot : getVisibleRobots()) {
+			if (robot.unit == SPECS.CASTLE) {
+				log("castle!!!!");
+				if (robot.id == me.id) {
+					continue;
 				}
+				log("found castle " + robot.id);
+				numOfUnits += robot.castle_talk;
 			}
 		}
+		log("POPULATION: " + numOfUnits);
 		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
@@ -88,16 +85,19 @@ public class MyRobot extends BCAbstractRobot {
 		Robot castle = null;
 		for (int dx = -1; dx <= 1; dx++) {
 			int testX = me.x + dx;
-			if (testX < 0 || testX > fullMap[0].length) {
+			if (testX <= -1 || testX >= fullMap[0].length) {
 				continue;
 			}
 			for (int dy = -1; dy <= 1; dy++) {
 				int testY = me.y + dy;
-				if (testY < 0 || testY > fullMap.length) {
+				if (testY <= -1 || testY >= fullMap.length) {
 					continue;
 				}
 				if (robotMap[testY][testX] > 0 && getRobot(robotMap[testY][testX]).unit == SPECS.CASTLE) {
 					castle = getRobot(robotMap[testY][testX]);
+					if (me.turn == 1) {
+						HOME = new int[] { castle.x, castle.y };
+					}
 					if (isRadioing(castle)) {
 						numOfUnits = castle.signal;
 					}
@@ -109,19 +109,15 @@ public class MyRobot extends BCAbstractRobot {
 			if (castle != null) {
 				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
 			}
-			return findBestMove(HOME[0], HOME[1], false);
+			return findBestMove(HOME[0], HOME[1], true);
 		}
 		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
-			log("is mining " + (fullMap[me.y][me.x] == KARBONITE ? "karbonite" : "fuel"));
 			return mine();
 		}
 		int[] location;
-		log("estimated pop: " + numOfUnits);
 		if (10 * numOfUnits > fuel) {
-			log("is finding fuel");
 			location = findClosestFuel();
 		} else {
-			log("is finding karbo");
 			location = findClosestKarbo();
 		}
 		return findBestMove(location[0], location[1], true);
@@ -155,7 +151,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	private int[] findClosestKarbo() {
 		int minDistance = fullMap.length * fullMap.length;
-		int[] ans = new int[2];
+		int[] ans = new int[] { 0, 0 };
 		for (int x = 0; x < fullMap[0].length; x++) {
 			for (int y = 0; y < fullMap.length; y++) {
 				if (fullMap[y][x] == KARBONITE && robotMap[y][x] <= 0) {
@@ -174,7 +170,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	private int[] findClosestFuel() {
 		int minDistance = fullMap.length * fullMap.length;
-		int[] ans = new int[2];
+		int[] ans = new int[] { 0, 0 };
 		for (int x = 0; x < fullMap[0].length; x++) {
 			for (int y = 0; y < fullMap.length; y++) {
 				if (fullMap[y][x] == FUEL && robotMap[y][x] <= 0) {
@@ -191,7 +187,7 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	private MoveAction findBestMove(int goalX, int goalY, boolean fuelEfficient) {
+	private Action findBestMove(int goalX, int goalY, boolean fuelEfficient) {
 		ArrayList<int[]> possMoves = new ArrayList<>();
 		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
 		int left = Math.max(0, me.x - radius);
@@ -202,27 +198,38 @@ public class MyRobot extends BCAbstractRobot {
 			int dx = x - me.x;
 			for (int y = top; y <= bottom; y++) {
 				int dy = y - me.y;
-				if (dx * dx + dy * dy <= radius * radius && fullMap[y][x] > IMPASSABLE && robotMap[y][x] == 0) {
-					possMoves.add(new int[] { x, y });
+				if (dx * dx + dy * dy <= radius * radius && fullMap[y][x] > IMPASSABLE) {
+					if (robotMap[y][x] <= 0 || dx * dx + dy * dy == 1 && (me.karbonite > 0 || me.fuel > 0)) {
+						possMoves.add(new int[] { x, y });
+					}
 				}
 			}
 		}
 		if (fuelEfficient) {
+			if (fuel == 0) {
+				return null;
+			}
+			int olddx = me.x - goalX;
+			int olddy = me.y - goalY;
 			for (int i = possMoves.size() - 1; i >= 0; i--) {
-				int dx = possMoves.get(i)[0] - goalX;
-				int dy = possMoves.get(i)[1] - goalY;
-				if (dx * dx + dy * dy != 1
-						|| dx * dx + dy * dy > (me.x - goalX) * (me.x - goalX)
-								+ (me.y - goalY) * (me.y - goalY)) {
+				int x = possMoves.get(i)[0];
+				int y = possMoves.get(i)[1];
+				int newdx = x - goalX;
+				int newdy = y - goalY;
+				if ((x - me.x) * (x - me.x) + (y - me.y) * (y - me.y) != 1
+						|| newdx * newdx + newdy * newdy > olddx * olddx + olddy * olddy) {
 					possMoves.remove(i);
 				}
+			}
+			if (possMoves.size() == 0) {
+				return findBestMove(goalX, goalY, false);
 			}
 		} else {
 			int minScore = 64 * 64;
 			for (int i = possMoves.size() - 1; i >= 0; i--) {
 				int dx = possMoves.get(i)[0] - goalX;
 				int dy = possMoves.get(i)[1] - goalY;
-				if (dx * dx + dy * dy > minScore) {
+				if (dx * dx + dy * dy > minScore || SPECS.UNITS[me.unit].FUEL_PER_MOVE * (dx * dx + dy * dy) > fuel) {
 					possMoves.remove(i);
 				} else if (dx * dx + dy * dy < minScore) {
 					for (int j = possMoves.size() - 1; j > i; j--) {
@@ -231,8 +238,14 @@ public class MyRobot extends BCAbstractRobot {
 					minScore = dx * dx + dy * dy;
 				}
 			}
-			int[] randomBest = possMoves.get((int) (Math.random() * possMoves.size()));
-			return move(randomBest[0] - me.x, randomBest[1] - me.y);
 		}
+		if (possMoves.size() == 0) {
+			return null;
+		}
+		int[] randomBest = possMoves.get((int) (Math.random() * possMoves.size()));
+		if (robotMap[randomBest[1]][randomBest[0]] > 0) {
+			return give(randomBest[0] - me.x, randomBest[1] - me.y, me.karbonite, me.fuel);
+		}
+		return move(randomBest[0] - me.x, randomBest[1] - me.y);
 	}
 }
