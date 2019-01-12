@@ -103,8 +103,8 @@ public class MyRobot extends BCAbstractRobot {
 					castleYSquare = (int) (castleSquareCode / ((int) ((fullMap[0].length - 1) / 3) + 1));
 					castleXSquare = castleSquareCode % ((int) ((fullMap[0].length - 1) / 3) + 1);
 				}
-				log("There is castle at [" + castleXSquare + ", " + castleYSquare + "] = around (" + (3 * castleXSquare
-						+ 1) + ", " + (3 * castleYSquare + 1) + ")");
+				log("There is castle at [" + castleXSquare + ", " + castleYSquare + "] = around ("
+						+ (3 * castleXSquare + 1) + ", " + (3 * castleYSquare + 1) + ")");
 				castleLocations[castleIndex][0] = castleXSquare;
 				castleLocations[castleIndex++][1] = castleYSquare;
 			}
@@ -123,13 +123,18 @@ public class MyRobot extends BCAbstractRobot {
 					castleYSquare = (int) (castleSquareCode / ((int) ((fullMap[0].length - 1) / 3) + 1));
 					castleXSquare = castleSquareCode % ((int) ((fullMap[0].length - 1) / 3) + 1);
 				}
-				log("There is castle at [" + castleXSquare + ", " + castleYSquare + "] = around (" + (3 * castleXSquare
-						+ 1) + ", " + (3 * castleYSquare + 1) + ")");
+				log("There is castle at [" + castleXSquare + ", " + castleYSquare + "] = around ("
+						+ (3 * castleXSquare + 1) + ", " + (3 * castleYSquare + 1) + ")");
 				castleLocations[castleIndex][0] = castleXSquare;
 				castleLocations[castleIndex++][1] = castleYSquare;
 			}
+			return null;
 		}
-		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL - 2
+		for (int robotId : castleIds) {
+			numOfUnits += getRobot(robotId).castle_talk;
+		}
+		log("global population: " + numOfUnits);
+		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
 		}
@@ -150,6 +155,7 @@ public class MyRobot extends BCAbstractRobot {
 					}
 					numOfUnits++;
 					signal(numOfUnits, 2);
+					castleTalk(1);
 					return buildUnit(SPECS.PILGRIM, dx, dy);
 				}
 			}
@@ -191,33 +197,18 @@ public class MyRobot extends BCAbstractRobot {
 			return findBestMove(HOME[0], HOME[1], true);
 		}
 		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
-			for (int dx = -1; dx <= 1; dx++) {
-				int testX = me.x + dx;
-				if (testX <= -1 || testX >= fullMap[0].length) {
-					continue;
-				}
-				for (int dy = -1; dy <= 1; dy++) {
-					int testY = me.y + dy;
-					if (testY <= -1 || testY >= fullMap.length) {
-						continue;
-					}
-					if (robotMap[testY][testX] > 0) {
-						return give(dx, dy, me.karbonite, me.fuel);
-					}
-					if (fuel == 0) {
-						return null;
-					}
-					return mine();
-				}
-				int[] location;
-				if (10 * numOfUnits > fuel) {
-					location = findClosestFuel();
-				} else {
-					location = findClosestKarbo();
-				}
-				return findBestMove(location[0], location[1], true);
+			if (fuel == 0) {
+				return null;
 			}
+			return mine();
 		}
+		int[] location;
+		if (6 * numOfUnits > fuel) {
+			location = findClosestFuel();
+		} else {
+			location = findClosestKarbo();
+		}
+		return findBestMove(location[0], location[1], true);
 	}
 
 	public void getFullMap() {
