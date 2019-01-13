@@ -103,18 +103,7 @@ public class MyRobot extends BCAbstractRobot {
 			log(str);*/
 
 
-			if(numCastles == 2)
-			{
-				signal(encodedCastleLocs[1] * 257, 1);
-			}
-			else if(numCastles == 3)
-			{
-				signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], 1);
-			}
-			else if(numCastles != 1)
-			{
-				log("oh no numCastles is " + numCastles);
-			}
+			sendCastleLocs(1);
 			return buildUnit(SPECS.PILGRIM, 0, 1);
 		}
 	}
