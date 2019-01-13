@@ -78,6 +78,11 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(me.turn == 2)
 		{
+			if(numCastles > 1)
+			{
+				sendOwnLoc();
+			}
+			
 			int[][] plain = new int[2][2];
 
 			for (int i = 1; i < numCastles; i++)
@@ -107,9 +112,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-
-
-			String str  = "{";
+		/*	String str  = "{"; // Testing that castles know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
 				str += "{";
@@ -120,7 +123,7 @@ public class MyRobot extends BCAbstractRobot {
 				str = str.substring(0, str.length() - 2) + "}, ";
 			}
 			str = str.substring(0, str.length() - 2) + "}";
-			log(str);
+			log(str);*/
 		}
 
 		return null;
