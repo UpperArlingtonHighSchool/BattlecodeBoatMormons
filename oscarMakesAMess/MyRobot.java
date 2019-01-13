@@ -1,7 +1,6 @@
 package bc19;
 
 import java.util.ArrayList;
-
 import bc19.*;
 
 public class MyRobot extends BCAbstractRobot {
@@ -10,6 +9,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int top;
 	private int left;
 	private int numOfUnits = 0;
+	private ArrayList<int[]> currentPath = new ArrayList<>();
 	private int[] castleIds;
 	private int[][] castleLocations;
 	private int[][] fullMap;
@@ -189,12 +189,20 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
+		if (currentPath.size() > 0) {
+			int[] move = currentPath.remove(0);
+			if (robotMap[move[1]][move[0]] >= 0) {
+				return move(move[0] - me.x, move[1] - me.y);
+			}
+		}
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
 			if (castle != null) {
 				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
 			}
-			return findBestMove(HOME[0], HOME[1], true);
+			currentPath = aStarAlgorithm(HOME[0], HOME[1]);
+			int[] move = currentPath.remove(0);
+			return move(move[0] - me.x, move[1] - me.y);
 		}
 		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
 			if (fuel == 0) {
@@ -208,7 +216,9 @@ public class MyRobot extends BCAbstractRobot {
 		} else {
 			location = findClosestKarbo();
 		}
-		return findBestMove(location[0], location[1], true);
+		currentPath = aStarAlgorithm(location[0], location[1]);
+		int[] move = currentPath.remove(0);
+		return move(move[0] - me.x, move[1] - me.y);
 	}
 
 	public void getFullMap() {
@@ -297,6 +307,59 @@ public class MyRobot extends BCAbstractRobot {
 					}
 				}
 			}
+		}
+		return ans;
+	}
+
+	private ArrayList<int[]> aStarAlgorithm(int goalX, int goalY) {
+		class MapSpot {
+			int x, y, traveled, estimate;
+			MapSpot parent;
+
+			MapSpot(MapSpot previous, int xSpot, int ySpot, int realCost, int estimatedCost) {
+				parent = previous;
+				x = xSpot;
+				y = ySpot;
+				traveled = realCost;
+				estimate = estimatedCost;
+			}
+
+			int compareTo(MapSpot other) {
+				return this.traveled + this.estimate - other.traveled - other.estimate;
+			}
+		}
+		ArrayList<MapSpot> spots = new ArrayList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, Math.abs(goalX - me.x) + Math.abs(goalY - me.y));
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, me.x - maxRadius);
+			int top = Math.max(0, me.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, me.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, me.y + maxRadius);
+			for (int x = left; x <= right; x++) {
+				int dx = x - me.x;
+				for (int y = top; y <= bottom; y++) {
+					int dy = y - me.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + Math.abs(dx) + Math.abs(dy),
+								Math.abs(goalX - x) + Math.abs(goalY - y));
+						for (int i = 0; i < spots.size(); i++) {
+							if (toAdd.compareTo(spots.get(i)) < 0) {
+								spots.add(i, toAdd);
+								continue;
+							}
+						}
+						spots.add(toAdd);
+					}
+				}
+			}
+			spot = spots.remove(0);
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(0, new int[] { spot.x, spot.y });
+			spot = spot.parent;
 		}
 		return ans;
 	}
