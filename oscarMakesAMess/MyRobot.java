@@ -191,7 +191,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		if (currentPath.size() > 0) {
 			int[] move = currentPath.remove(0);
-			if (robotMap[move[1]][move[0]] >= 0) {
+			if (robotMap[move[1]][move[0]] <= 0) {
 				return move(move[0] - me.x, move[1] - me.y);
 			}
 		}
