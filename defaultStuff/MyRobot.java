@@ -60,7 +60,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			numCastles = 1;
 			castleIDs[0] = me.id;
-			
+
 			for(Robot rob : getVisibleRobots())
 			{
 				if(rob.team == me.team && rob.id != me.id)
@@ -82,37 +82,57 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				sendOwnLoc();
 			}
-			
-			int[][] plain = new int[2][2];
 
 			for (int i = 1; i < numCastles; i++)
 			{
 				encodedCastleLocs[i] = getRobot(castleIDs[i]).castle_talk;
-
-				plain[i - 1][0] = (int) Math.floor(encodedCastleLocs[i] / 8) * 2;
-
-				if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
-				{
-					plain[i - 1][1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + 3;
-				}
-				else
-				{
-					plain[i - 1][1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
-				}
-
-
-				if(hRefl)
-				{
-					plainCastleLocs[i][0] = plain[i - 1][1];
-					plainCastleLocs[i][1] = plain[i - 1][0];
-				}
-				else
-				{
-					plainCastleLocs[i] = plain[i - 1];
-				}
+				decodeCastleLoc(i);
 			}
 
-		/*	String str  = "{"; // Testing that castles know where all castles are 
+			/*String str  = "{"; // Testing that castles know where all castles are 
+			for(int i = 0; i < numCastles; i++)
+			{
+				str += "{";
+				for(int j = 0; j < 2; j++)
+				{
+					str += plainCastleLocs[i][j] + ", ";
+				}
+				str = str.substring(0, str.length() - 2) + "}, ";
+			}
+			str = str.substring(0, str.length() - 2) + "}";
+			log(str);*/
+
+
+			if(numCastles == 2)
+			{
+				signal(encodedCastleLocs[1] * 257, 1);
+			}
+			else if(numCastles == 3)
+			{
+				signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], 1);
+			}
+			else if(numCastles != 1)
+			{
+				log("oh no numCastles is " + numCastles);
+			}
+			return buildUnit(SPECS.PILGRIM, 0, 1);
+		}
+	}
+
+
+	private Action church()
+	{
+		return null;
+	}
+
+
+	private Action pilgrim()
+	{
+		if(me.turn == 1)
+		{
+			getAllCastleLocs();
+
+			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
 				str += "{";
@@ -125,19 +145,6 @@ public class MyRobot extends BCAbstractRobot {
 			str = str.substring(0, str.length() - 2) + "}";
 			log(str);*/
 		}
-
-		return null;
-	}
-
-
-	private Action church()
-	{
-		return null;
-	}
-
-
-	private Action pilgrim()
-	{
 		return null;
 	}
 
@@ -195,8 +202,6 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-
-
 	private boolean getReflDir() // set hRefl
 	{
 		int top = (fullMap.length + 1) / 2;
@@ -235,51 +240,7 @@ public class MyRobot extends BCAbstractRobot {
 		return true; // If it gets here, it's reflected both ways.
 	}
 
-	/*private void getCastleLocs()
-	{
-		for(Robot rob : getVisibleRobots())
-		{
-			if(rob.unit == SPECS.CASTLE && rob.team == me.team)
-			{
-				plainCastleLocs[0] = new int[] {rob.x, rob.y};
-
-				if(isRadioing(rob))
-				{
-					if(hRefl)
-					{
-						plainCastleLocs[1][1] = ((int) Math.floor(rob.signal / 2048)) * 2;
-						plainCastleLocs[2][1] = ((int) Math.floor(rob.signal / 8) % 32) * 2;
-
-						plainCastleLocs[1][0] = ((int) Math.floor(rob.signal / 256) % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
-						plainCastleLocs[2][0] = (rob.signal % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
-					}
-					else
-					{
-						plainCastleLocs[1][0] = (int) Math.floor(rob.signal / 2048);
-						plainCastleLocs[2][0] = (int) Math.floor(rob.signal / 8) % 32;
-
-						plainCastleLocs[1][1] = ((int) Math.floor(rob.signal / 256) % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
-						plainCastleLocs[2][1] = (rob.signal % 8) * 2 + (int) Math.floor(fullMap.length / 2) + 8;
-					}
-
-					if(plainCastleLocs[1][0] == plainCastleLocs[2][0] && plainCastleLocs[1][1] == plainCastleLocs[2][1])
-					{
-						numCastles = 2;
-					}
-					else
-					{
-						numCastles = 3;
-					}
-				}
-				else
-				{
-					numCastles = 1;
-				}
-			}
-		}
-	}*/
-
-	private void sendOwnLoc()
+	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
 	{
 		int[] plain; // 0 is location on your half of map; 1 is how far across
 		int[] encoded = new int[2]; // ditto above
@@ -303,6 +264,12 @@ public class MyRobot extends BCAbstractRobot {
 			encoded[1] = (int) Math.floor((plain[1] - 3) / 2);
 		}
 
+		if(encoded[1] >= 8)
+		{
+			log("encoded location across value was too big (it was " + encoded[1] + "), it has been set to 7.");
+			encoded[1] = 7;
+		}
+
 		if(encoded[0] >= 32 || encoded[0] < 0)
 		{
 			log("oh no encoded[0] is " + encoded[0]);
@@ -317,93 +284,82 @@ public class MyRobot extends BCAbstractRobot {
 		castleTalk(encodedCastleLocs[0]);
 	}
 
+	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding
+	{									// index of plainCastleLocs.
+		int[] plain = new int[2];
 
-	/*private void sendCastleLocs(int r2) // Whenever you make a pilgrim, call this. Will give
+		plain[0] = (int) Math.floor(encodedCastleLocs[i] / 8) * 2;
+
+		if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
+		{
+			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + 3;
+		}
+		else
+		{
+			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
+		}
+
+
+		if(hRefl)
+		{
+			plainCastleLocs[i][0] = plain[1];
+			plainCastleLocs[i][1] = plain[0];
+		}
+		else
+		{
+			plainCastleLocs[i] = plain;
+		}
+	}
+
+	private void sendCastleLocs(int r2) // Whenever you make a pilgrim, call this. Will give
 	{		// how far away pilgrim has to be in each direction to be closer to other castle.
 
-		if(numCastles == 2) // Does same as if there are 3, but gives same location twice.
+		if(numCastles == 2)
 		{
-			int[] vals = new int[2];
-
-			for(Robot rob : getVisibleRobots())
-			{
-				if(rob.id != me.id && rob.team == me.team)
-				{
-					if(hRefl) // Same thing for horizontal and vertical reflection
-					{
-						vals[0] = (int) Math.floor(me.y / 2);
-						if(me.x >= fullMap.length / 2) // Same thing for opposite sides of the map
-						{
-							vals[1] = (int) Math.floor((me.x - (int) Math.floor(fullMap.length / 2) - 8) / 2);
-						}
-						else
-						{
-							vals[1] = (int) Math.floor((me.x - 3) / 2);
-						}
-					}
-					else
-					{
-						vals[0] = (int) Math.floor(me.x / 2);
-						if(me.y >= fullMap.length / 2)
-						{
-							vals[1] = (int) Math.floor((me.y - (int) Math.floor(fullMap.length / 2) - 8) / 2);
-						}
-						else
-						{
-							vals[1] = (int) Math.floor((me.y - 3) / 2);
-						}
-					}
-				}
-			}
-
-			signal(vals[0] * 2048 + vals[1] * 256 + vals[0] * 8 + vals[1], r2);
+			signal(encodedCastleLocs[1] * 257, r2);
 		}
-
 		else if(numCastles == 3)
 		{
-			int[] vals = new int[4];
-			int i = 0;
+			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
+		}
+		else if(numCastles != 1)
+		{
+			log("oh no numCastles is " + numCastles);
+		}
+	}
 
-			for(Robot rob : getVisibleRobots())
+	private void getAllCastleLocs() // Call on first turn of unit to get locations of and number of castles
+	{
+		for(Robot rob : getVisibleRobots())
+		{
+			if(rob.unit == SPECS.CASTLE)
 			{
-				if(rob.id != me.id && rob.team == me.team && rob.unit == SPECS.CASTLE)
+				plainCastleLocs[0] = new int[] {rob.x, rob.y};
+
+				if(isRadioing(rob))
 				{
-					if(hRefl) // Same thing for horizontal and vertical reflection
+					encodedCastleLocs[1] = (int) Math.floor(rob.signal / 256);
+					encodedCastleLocs[2] = (int) Math.floor(rob.signal % 256);
+
+					if(encodedCastleLocs[1] == encodedCastleLocs[2])
 					{
-						vals[i] = (int) Math.floor(me.y / 2);
-						if(me.x >= fullMap.length / 2) // Same thing for opposite sides of the map
-						{
-							vals[i + 1] = (int) Math.floor((me.x - (int) Math.floor(fullMap.length / 2) - 8) / 2);
-						}
-						else
-						{
-							vals[i + 1] = (int) Math.floor((me.x - 3) / 2);
-						}
+						numCastles = 2;
+						decodeCastleLoc(1);
 					}
 					else
 					{
-						vals[i] = (int) Math.floor(me.x / 2);
-						if(me.y >= fullMap.length / 2)
-						{
-							vals[i + 1] = (int) Math.floor((me.y - (int) Math.floor(fullMap.length / 2) - 8) / 2);
-						}
-						else
-						{
-							vals[i + 1] = (int) Math.floor((me.y - 3) / 2);
-						}
+						numCastles = 3;
+						decodeCastleLoc(1);
+						decodeCastleLoc(2);
 					}
-					i += 2;
+				}
+				else
+				{
+					numCastles = 1;
 				}
 			}
-
-			signal(vals[0] * 2048 + vals[1] * 256 + vals[2] * 8 + vals[3], r2);
 		}
-
-		else if(numCastles != 1)
-		{
-			log("this is very bad numCastles is " + numCastles);
-		}
-	}*/
+	}
 
 	private AttackAction autoAttack() // NOT TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
 	{
@@ -471,7 +427,6 @@ public class MyRobot extends BCAbstractRobot {
 
 		return killable.toArray(new Robot[killable.size()]);
 	}
-
 
 	// For preacherAttack()
 	private Robot[] getAllies() // Now returns only visible allies, but preachers can damage non-visible allies :(	plis update
