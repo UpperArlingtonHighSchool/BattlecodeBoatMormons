@@ -40,6 +40,7 @@ public class MyRobot extends BCAbstractRobot {
 		case 5: // preacher
 			break;
 		}
+		return null;
 	}
 
 	private Action castleAction() {
@@ -109,7 +110,8 @@ public class MyRobot extends BCAbstractRobot {
 				castleLocations[castleIndex++][1] = castleYSquare;
 			}
 			return null;
-		} else if (me.turn == 2) {
+		}
+		if (me.turn == 2) {
 			for (int robotId : castleIds) {
 				int castleSquareCode = getRobot(robotId).castle_talk;
 				if (castleSquareCode == 0) {
@@ -190,9 +192,10 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (currentPath.size() > 0) {
-			int[] move = currentPath.remove(0);
-			if (robotMap[move[1]][move[0]] <= 0) {
-				return move(move[0] - me.x, move[1] - me.y);
+			int[] nextMove = currentPath.get(0);
+			currentPath.remove(0);
+			if (robotMap[nextMove[1]][nextMove[0]] <= 0) {
+				return move(nextMove[0] - me.x, nextMove[1] - me.y);
 			}
 		}
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
@@ -201,8 +204,9 @@ public class MyRobot extends BCAbstractRobot {
 				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
 			}
 			currentPath = aStarAlgorithm(HOME[0], HOME[1]);
-			int[] move = currentPath.remove(0);
-			return move(move[0] - me.x, move[1] - me.y);
+			int[] nextMove = currentPath.get(0);
+			currentPath.remove(0);
+			return move(nextMove[0] - me.x, nextMove[1] - me.y);
 		}
 		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
 			if (fuel == 0) {
@@ -217,8 +221,9 @@ public class MyRobot extends BCAbstractRobot {
 			location = findClosestKarbo();
 		}
 		currentPath = aStarAlgorithm(location[0], location[1]);
-		int[] move = currentPath.remove(0);
-		return move(move[0] - me.x, move[1] - me.y);
+		int[] nextMove = currentPath.get(0);
+		currentPath.remove(0);
+		return move(nextMove[0] - me.x, nextMove[1] - me.y);
 	}
 
 	public void getFullMap() {
@@ -311,50 +316,35 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	private ArrayList<int[]> aStarAlgorithm(int goalX, int goalY) {
-		class MapSpot {
-			int x, y, traveled, estimate;
-			MapSpot parent;
-
-			MapSpot(MapSpot previous, int xSpot, int ySpot, int realCost, int estimatedCost) {
-				parent = previous;
-				x = xSpot;
-				y = ySpot;
-				traveled = realCost;
-				estimate = estimatedCost;
-			}
-
-			int compareTo(MapSpot other) {
-				return this.traveled + this.estimate - other.traveled - other.estimate;
-			}
-		}
-		ArrayList<MapSpot> spots = new ArrayList<>();
-		MapSpot spot = new MapSpot(null, me.x, me.y, 0, Math.abs(goalX - me.x) + Math.abs(goalY - me.y));
+	private ArrayList<int[]> bfs(int goalX, int goalY) {
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		while (spot.x != goalX || spot.y != goalY) {
-			int left = Math.max(0, me.x - maxRadius);
-			int top = Math.max(0, me.y - maxRadius);
-			int right = Math.min(fullMap[0].length - 1, me.x + maxRadius);
-			int bottom = Math.min(fullMap.length - 1, me.y + maxRadius);
+		ArrayList<MapSpot> spots = new ArrayList<>();
+		spots.add(new MapSpot(null, me.x, me.y, 0, 0));
+		MapSpot spot;
+		main: while (true) {
+			spot = spots.get(0);
+			spots.remove(0);
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
 			for (int x = left; x <= right; x++) {
-				int dx = x - me.x;
+				int dx = x - spot.x;
 				for (int y = top; y <= bottom; y++) {
-					int dy = y - me.y;
+					int dy = y - spot.y;
 					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
 							&& robotMap[y][x] <= 0) {
-						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + Math.abs(dx) + Math.abs(dy),
-								Math.abs(goalX - x) + Math.abs(goalY - y));
-						for (int i = 0; i < spots.size(); i++) {
-							if (toAdd.compareTo(spots.get(i)) < 0) {
-								spots.add(i, toAdd);
-								continue;
-							}
+						MapSpot newSpot = new MapSpot(spot, x, y, 0, 0);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < (goalX - me.x) * (goalX - me.x)
+								+ (goalY - me.y) * (goalY - me.y)) {
+							spot = newSpot;
+							break main;
 						}
-						spots.add(toAdd);
+						spots.add(newSpot);
 					}
 				}
 			}
-			spot = spots.remove(0);
 		}
 		ArrayList<int[]> ans = new ArrayList<>();
 		while (spot.parent != null) {
@@ -364,7 +354,60 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
+	private ArrayList<int[]> aStarAlgorithm(int goalX, int goalY) {
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		ArrayList<MapSpot> spots = new ArrayList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, (Math.abs(goalX - me.x) + Math.abs(goalY - me.y)) * fuelCost);
+		main: while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot.x;
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+
+						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + (dx * dx + dy * dy) * fuelCost,
+								(Math.abs(goalX - x) + Math.abs(goalY - y)) * fuelCost);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < (goalX - me.x) * (goalX - me.x)
+								+ (goalY - me.y) * (goalY - me.y) || toAdd.estimate == 0) {
+							spot = toAdd;
+							break main;
+						}
+						for (int i = 0; i < spots.size(); i++) {
+							if (toAdd.compareTo(spots.get(i)) < 0) {
+								spots.add(i, toAdd);
+								for (int j = i + 1; j < spots.size(); j++) {
+									if (spots.get(j).equals(toAdd)) {
+										spots.remove(j);
+									}
+								}
+								continue looping;
+							} else if (toAdd.equals(spots.get(i))) {
+								continue looping;
+							}
+						}
+						spots.add(toAdd);
+					}
+				}
+			}
+			spot = spots.get(0);
+			spots.remove(0);
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(new int[] { spot.x, spot.y });
+			spot = spot.parent;
+		}
+		return ans;
+	}
+
 	private Action findBestMove(int goalX, int goalY, boolean fuelEfficient) {
+		// return null;
 		ArrayList<int[]> possMoves = new ArrayList<>();
 		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
 		int left = Math.max(0, me.x - radius);
