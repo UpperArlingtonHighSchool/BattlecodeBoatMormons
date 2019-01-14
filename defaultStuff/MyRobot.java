@@ -19,6 +19,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int[] encodedCastleLocs = new int[3];
+	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int encodedLocError; // Only for use by castles in first few turns
 
 	public Action turn() {
@@ -93,7 +94,7 @@ public class MyRobot extends BCAbstractRobot {
 				encodedCastleLocs[i] = getRobot(castleIDs[i]).castle_talk;
 				decodeCastleLoc(i);
 			}
-			
+
 			sendCastleLocs(1);
 			return buildUnit(SPECS.PILGRIM, 0, 1);
 		}
@@ -111,7 +112,8 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
 			}
-			
+			getEnemyCastleLocs();
+
 			/*String str  = "{"; // Testing that castles know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
@@ -139,7 +141,7 @@ public class MyRobot extends BCAbstractRobot {
 		if(me.turn == 1)
 		{
 			getAllCastleLocs();
-
+			getEnemyCastleLocs();
 			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
@@ -279,7 +281,7 @@ public class MyRobot extends BCAbstractRobot {
 			encodedLocError += 2 * (temp % 2);
 			encoded[1] = (int) Math.floor(temp / 2);
 		}
-		
+
 		if(encoded[1] >= 8)
 		{
 			log("encoded location across value was too big (it was " + encoded[1] + "), it has been set to 7.");
@@ -387,6 +389,23 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					numCastles = 1;
 				}
+			}
+		}
+	}
+
+	private void getEnemyCastleLocs()
+	{
+		for(int i = 0; i < 3; i++)
+		{
+			if(hRefl)
+			{
+				enemyCastleLocs[i][0] = fullMap.length - 1 - plainCastleLocs[i][0];
+				enemyCastleLocs[i][1] = plainCastleLocs[i][1];
+			}
+			else
+			{
+				enemyCastleLocs[i][0] = plainCastleLocs[i][0];
+				enemyCastleLocs[i][1] = fullMap.length - 1 - plainCastleLocs[i][1];
 			}
 		}
 	}
@@ -657,7 +676,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		return attack(finalBestLoc[0] - 4, finalBestLoc[1] - 4);
 	}
-	
+
 	// WHY ARE THESE SO SLOW
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
 		log("goal is (" + goalX + ", " + goalY + ")");
