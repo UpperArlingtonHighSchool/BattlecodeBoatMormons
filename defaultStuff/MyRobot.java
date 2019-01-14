@@ -323,7 +323,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private void fixLocError(int adjustment, int i)
+	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of other castles
 	{
 		if(hRefl)
 		{
