@@ -3,7 +3,11 @@ package bc19;
 import java.util.ArrayList;
 
 import bc19.*;
+/*
+pseudocode for crusader rush defense:
+be constantly searching for incoming mass crusader
 
+*/
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
 
@@ -23,7 +27,7 @@ public class MyRobot extends BCAbstractRobot {
     {
     		if (turn == 1)
     		{
-    			
+    			buildUnit(3, -1, 0);
     		}
     		return null;
     }
@@ -185,6 +189,7 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action crusader()
     {
+
     		return null;
     }
     
@@ -197,6 +202,9 @@ public class MyRobot extends BCAbstractRobot {
     
     public Action preacher()
     {
+    	//search if 
+    		Robot[] bots = getVisibleRobots();
+    		System.out.println(bots);
     		return null;
     }
 }
