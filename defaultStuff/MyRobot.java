@@ -15,6 +15,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int[] encodedCastleLocs = new int[3];
+	private int encodedLocError; // Only for use by castles in first few turns
 
 	public Action turn() {
 		if(me.turn == 1)
@@ -76,7 +77,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if(me.turn == 2)
+		else if(me.turn == 2)
 		{
 			if(numCastles > 1)
 			{
@@ -88,7 +89,25 @@ public class MyRobot extends BCAbstractRobot {
 				encodedCastleLocs[i] = getRobot(castleIDs[i]).castle_talk;
 				decodeCastleLoc(i);
 			}
+			
+			sendCastleLocs(1);
+			return buildUnit(SPECS.PILGRIM, 0, 1);
+		}
 
+		else if(me.turn == 3)
+		{
+			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
+		}
+
+		else if(me.turn == 4)
+		{
+			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
+
+			for (int i = 1; i < numCastles; i++)
+			{
+				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
+			}
+			
 			/*String str  = "{"; // Testing that castles know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
@@ -101,10 +120,6 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			str = str.substring(0, str.length() - 2) + "}";
 			log(str);*/
-
-
-			sendCastleLocs(1);
-			return buildUnit(SPECS.PILGRIM, 0, 1);
 		}
 	}
 
@@ -233,6 +248,7 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		int[] plain; // 0 is location on your half of map; 1 is how far across
 		int[] encoded = new int[2]; // ditto above
+		int temp;
 
 		if(hRefl)
 		{
@@ -243,16 +259,23 @@ public class MyRobot extends BCAbstractRobot {
 			plain = new int[] {me.x, me.y};
 		}
 
+		encodedLocError = 0;
+		encodedLocError += plain[0] % 2;
+
 		encoded[0] = (int) Math.floor(plain[0] / 2);
 		if(plain[1] >= fullMap.length / 2) // Same thing for opposite sides of the map
 		{
-			encoded[1] = (int) Math.floor((plain[1] - (int) Math.floor(fullMap.length / 2) - 8) / 2);
+			temp = (plain[1] - (int) Math.floor(fullMap.length / 2) - 8);
+			encodedLocError += 2 * (temp % 2);
+			encoded[1] = (int) Math.floor(temp / 2);
 		}
 		else
 		{
-			encoded[1] = (int) Math.floor((plain[1] - 3) / 2);
+			temp = (plain[1] - 3);
+			encodedLocError += 2 * (temp % 2);
+			encoded[1] = (int) Math.floor(temp / 2);
 		}
-
+		
 		if(encoded[1] >= 8)
 		{
 			log("encoded location across value was too big (it was " + encoded[1] + "), it has been set to 7.");
@@ -297,6 +320,20 @@ public class MyRobot extends BCAbstractRobot {
 		else
 		{
 			plainCastleLocs[i] = plain;
+		}
+	}
+
+	private void fixLocError(int adjustment, int i)
+	{
+		if(hRefl)
+		{
+			plainCastleLocs[i][1] += adjustment % 2;
+			plainCastleLocs[i][0] += (int) Math.floor(adjustment / 2);
+		}
+		else
+		{
+			plainCastleLocs[i][0] += adjustment % 2;
+			plainCastleLocs[i][1] += (int) Math.floor(adjustment / 2);
 		}
 	}
 
