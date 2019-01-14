@@ -316,6 +316,7 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
+	// WHY ARE THESE SO SLOW
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
 		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
