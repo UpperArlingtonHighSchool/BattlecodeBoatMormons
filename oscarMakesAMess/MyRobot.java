@@ -203,7 +203,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (castle != null) {
 				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
 			}
-			currentPath = aStarAlgorithm(HOME[0], HOME[1]);
+			currentPath = bfs(HOME[0], HOME[1]);
 			int[] nextMove = currentPath.get(0);
 			currentPath.remove(0);
 			return move(nextMove[0] - me.x, nextMove[1] - me.y);
@@ -220,7 +220,7 @@ public class MyRobot extends BCAbstractRobot {
 		} else {
 			location = findClosestKarbo();
 		}
-		currentPath = aStarAlgorithm(location[0], location[1]);
+		currentPath = bfs(location[0], location[1]);
 		int[] nextMove = currentPath.get(0);
 		currentPath.remove(0);
 		return move(nextMove[0] - me.x, nextMove[1] - me.y);
@@ -332,7 +332,7 @@ public class MyRobot extends BCAbstractRobot {
 			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
 			for (int x = left; x <= right; x++) {
 				int dx = x - spot.x;
-				for (int y = top; y <= bottom; y++) {
+				looping: for (int y = top; y <= bottom; y++) {
 					int dy = y - spot.y;
 					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
 							&& robotMap[y][x] <= 0) {
@@ -341,6 +341,11 @@ public class MyRobot extends BCAbstractRobot {
 								+ (goalY - me.y) * (goalY - me.y)) {
 							spot = newSpot;
 							break main;
+						}
+						for (MapSpot inThere : spots) {
+							if (inThere.equals(newSpot)) {
+								continue looping;
+							}
 						}
 						spots.add(newSpot);
 					}
