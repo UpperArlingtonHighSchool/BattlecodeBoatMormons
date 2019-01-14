@@ -1,7 +1,10 @@
 package bc19;
 
 import bc19.*;
+import oscarMakesAMess.MapSpot;
+
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
 	private final int IMPASSABLE = -1;
@@ -10,6 +13,7 @@ public class MyRobot extends BCAbstractRobot {
 	private final int FUEL = 2;
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 1, 2}; // 0: Castle, 1: Church, 2: Pilgrim, 3: Crusader, 4: Prophet,
 	private boolean hRefl; // true iff reflected horizontally				 5: Preacher. Feel free to mess with order in your robots.
+	private int[][] robotMap;
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
 	private int numCastles;
 	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
@@ -43,7 +47,7 @@ public class MyRobot extends BCAbstractRobot {
 				log(boop);
 			}*/
 		}
-
+		robotMap = getVisibleRobotMap();
 		switch (me.unit) {
 		case 0: return castle();
 		case 1: return church();
@@ -652,5 +656,57 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		return attack(finalBestLoc[0] - 4, finalBestLoc[1] - 4);
+	}
+	
+	// WHY ARE THESE SO SLOW
+	private ArrayList<int[]> bfs(int goalX, int goalY) {
+		log("goal is (" + goalX + ", " + goalY + ")");
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		LinkedList<MapSpot> spots = new LinkedList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, 0);
+		main: while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
+			MapSpot closestPoint = null;
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot.x;
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						MapSpot newSpot = new MapSpot(spot, x, y, 0, 0);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
+							closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
+							closestPoint = newSpot;
+							continue looping;
+						}
+						for (MapSpot inThere : spots) {
+							if (inThere.equals(newSpot)) {
+								continue looping;
+							}
+						}
+						spots.add(newSpot);
+					}
+				}
+			}
+			if (closestPoint != null) {
+				spot = closestPoint;
+				break main;
+			}
+			spot = spots.poll();
+			if (spot == null) {
+				return null;
+			}
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(0, new int[] { spot.x, spot.y });
+			spot = spot.parent;
+		}
+		return ans;
 	}
 }
