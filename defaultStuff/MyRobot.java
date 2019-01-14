@@ -710,7 +710,7 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 	
-	// right now, BFS works better. it shouldn't seem the way that it be, but it do.
+	// right now, BFS works better. it shouldn't seem the way that it be, but it do. fix it if you dare
 	private ArrayList<int[]> aStar(int goalX, int goalY) {
 		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
