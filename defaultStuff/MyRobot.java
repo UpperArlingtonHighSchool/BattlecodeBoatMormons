@@ -709,4 +709,58 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return ans;
 	}
+	
+	// right now, BFS works better. it shouldn't seem the way that it be, but it do.
+	private ArrayList<int[]> aStar(int goalX, int goalY) {
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		ArrayList<MapSpot> spots = new ArrayList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, (Math.abs(goalX - me.x) + Math.abs(goalY - me.y)) * fuelCost);
+		main: while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot.x;
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + (dx * dx + dy * dy) * fuelCost,
+								(Math.abs(goalX - x) + Math.abs(goalY - y)) * fuelCost);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < (goalX - me.x) * (goalX - me.x)
+								+ (goalY - me.y) * (goalY - me.y)) {
+							spot = toAdd;
+							break main;
+						}
+						for (int i = 0; i < spots.size(); i++) {
+							if (toAdd.compareTo(spots.get(i)) < 0) {
+								spots.add(i, toAdd);
+								for (int j = i + 1; j < spots.size(); j++) {
+									if (spots.get(j).equals(toAdd)) {
+										spots.remove(j);
+										continue looping;
+									}
+								}
+								continue looping;
+							} else if (toAdd.equals(spots.get(i))) {
+								continue looping;
+							}
+						}
+						spots.add(toAdd);
+					}
+				}
+			}
+			spot = spots.get(0);
+			spots.remove(0);
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(new int[] { spot.x, spot.y });
+			spot = spot.parent;
+		}
+		return ans;
+	}
+
 }
