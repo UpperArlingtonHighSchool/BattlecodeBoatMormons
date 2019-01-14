@@ -781,5 +781,44 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return ans;
 	}
-
+	private int[] tryMove(int goalX, int goalY) {
+		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		int[][] moves;
+		int index = 0;
+		if (radius == 2) {
+			moves = new int[12][3];
+		} else if (radius == 3) {
+			moves = new int[28][3];
+		} else {
+			log("uh oh they updated the specs, fix tryOrder");
+		}
+		for (int dx = -radius; dx <= radius; dx++) {
+			int newX = me.x + dx;
+			if (newX <= -1 || newX >= fullMap[0].length) {
+				continue;
+			}
+			for (int dy = -radius; dy <= radius; dy++) {
+				int newY = me.y + dy;
+				if (newY <= -1 || newY >= fullMap.length || dx * dx + dy * dy > radius * radius
+						|| (dx * dx + dy * dy) * (SPECS.UNITS[me.unit].FUEL_PER_MOVE) > fuel
+						|| fullMap[newY][newX] == IMPASSABLE || robotMap[newY][newX] > 0) {
+					continue;
+				}
+				moves[index++] = new int[] { dx, dy,
+						(goalX - newX) * (goalX - newX) + (goalY - newY) * (goalY - newY) };
+			}
+		}
+		if (index == 0) {
+			return null;
+		}
+		int min = fullMap.length * fullMap.length + 1;
+		int minIndex;
+		for (int i = 0; i < index; i++) {
+			if (moves[i][2] < min) {
+				min = moves[i][2];
+				minIndex = i;
+			}
+		}
+		return moves[minIndex];
+	}
 }
