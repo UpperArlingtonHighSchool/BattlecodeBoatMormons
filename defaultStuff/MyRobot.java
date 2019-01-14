@@ -19,6 +19,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int[] encodedCastleLocs = new int[3];
+	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int encodedLocError; // Only for use by castles in first few turns
 
 	public Action turn() {
@@ -93,7 +94,7 @@ public class MyRobot extends BCAbstractRobot {
 				encodedCastleLocs[i] = getRobot(castleIDs[i]).castle_talk;
 				decodeCastleLoc(i);
 			}
-			
+
 			sendCastleLocs(1);
 			return buildUnit(SPECS.PILGRIM, 0, 1);
 		}
@@ -111,7 +112,8 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
 			}
-			
+			getEnemyCastleLocs();
+
 			/*String str  = "{"; // Testing that castles know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
@@ -139,7 +141,7 @@ public class MyRobot extends BCAbstractRobot {
 		if(me.turn == 1)
 		{
 			getAllCastleLocs();
-
+			getEnemyCastleLocs();
 			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
@@ -279,7 +281,7 @@ public class MyRobot extends BCAbstractRobot {
 			encodedLocError += 2 * (temp % 2);
 			encoded[1] = (int) Math.floor(temp / 2);
 		}
-		
+
 		if(encoded[1] >= 8)
 		{
 			log("encoded location across value was too big (it was " + encoded[1] + "), it has been set to 7.");
@@ -387,6 +389,23 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					numCastles = 1;
 				}
+			}
+		}
+	}
+
+	private void getEnemyCastleLocs()
+	{
+		for(int i = 0; i < 3; i++)
+		{
+			if(hRefl)
+			{
+				enemyCastleLocs[i][0] = fullMap.length - 1 - plainCastleLocs[i][0];
+				enemyCastleLocs[i][1] = plainCastleLocs[i][1];
+			}
+			else
+			{
+				enemyCastleLocs[i][0] = plainCastleLocs[i][0];
+				enemyCastleLocs[i][1] = fullMap.length - 1 - plainCastleLocs[i][1];
 			}
 		}
 	}
@@ -657,7 +676,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		return attack(finalBestLoc[0] - 4, finalBestLoc[1] - 4);
 	}
-	
+
 	// WHY ARE THESE SO SLOW
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
 		log("goal is (" + goalX + ", " + goalY + ")");
@@ -708,5 +727,98 @@ public class MyRobot extends BCAbstractRobot {
 			spot = spot.parent;
 		}
 		return ans;
+	}
+	
+	// right now, BFS works better. it shouldn't seem the way that it be, but it do. fix it if you dare...
+	private ArrayList<int[]> aStar(int goalX, int goalY) {
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		ArrayList<MapSpot> spots = new ArrayList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, (Math.abs(goalX - me.x) + Math.abs(goalY - me.y)) * fuelCost);
+		main: while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot.x;
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + (dx * dx + dy * dy) * fuelCost,
+								(Math.abs(goalX - x) + Math.abs(goalY - y)) * fuelCost);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < (goalX - me.x) * (goalX - me.x)
+								+ (goalY - me.y) * (goalY - me.y)) {
+							spot = toAdd;
+							break main;
+						}
+						for (int i = 0; i < spots.size(); i++) {
+							if (toAdd.compareTo(spots.get(i)) < 0) {
+								spots.add(i, toAdd);
+								for (int j = i + 1; j < spots.size(); j++) {
+									if (spots.get(j).equals(toAdd)) {
+										spots.remove(j);
+										continue looping;
+									}
+								}
+								continue looping;
+							} else if (toAdd.equals(spots.get(i))) {
+								continue looping;
+							}
+						}
+						spots.add(toAdd);
+					}
+				}
+			}
+			spot = spots.get(0);
+			spots.remove(0);
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(new int[] { spot.x, spot.y });
+			spot = spot.parent;
+		}
+		return ans;
+	}
+	private int[] tryMove(int goalX, int goalY) {
+		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		int[][] moves;
+		int index = 0;
+		if (radius == 2) {
+			moves = new int[12][3];
+		} else if (radius == 3) {
+			moves = new int[28][3];
+		} else {
+			log("uh oh they updated the specs, fix tryOrder");
+		}
+		for (int dx = -radius; dx <= radius; dx++) {
+			int newX = me.x + dx;
+			if (newX <= -1 || newX >= fullMap[0].length) {
+				continue;
+			}
+			for (int dy = -radius; dy <= radius; dy++) {
+				int newY = me.y + dy;
+				if (newY <= -1 || newY >= fullMap.length || dx * dx + dy * dy > radius * radius
+						|| (dx * dx + dy * dy) * (SPECS.UNITS[me.unit].FUEL_PER_MOVE) > fuel
+						|| fullMap[newY][newX] == IMPASSABLE || robotMap[newY][newX] > 0) {
+					continue;
+				}
+				moves[index++] = new int[] { dx, dy,
+						(goalX - newX) * (goalX - newX) + (goalY - newY) * (goalY - newY) };
+			}
+		}
+		if (index == 0) {
+			return null;
+		}
+		int min = fullMap.length * fullMap.length + 1;
+		int minIndex;
+		for (int i = 0; i < index; i++) {
+			if (moves[i][2] < min) {
+				min = moves[i][2];
+				minIndex = i;
+			}
+		}
+		return moves[minIndex];
 	}
 }
