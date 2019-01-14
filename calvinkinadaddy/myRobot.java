@@ -10,6 +10,11 @@ be constantly searching for incoming mass crusader
 */
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
+	public int[][] fullMap;
+	private final int IMPASSABLE = -1;
+	private final int PASSABLE = 0;
+	private final int KARBONITE = 1;
+	private final int FUEL = 2;
 
 	public Action turn() {
     	turn++;
@@ -27,7 +32,16 @@ public class MyRobot extends BCAbstractRobot {
     {
     		if (turn == 1)
     		{
-    			buildUnit(3, -1, 0);
+    			getFMap();
+    			for(int i = -1; i<=1; i++){
+    				for(int j = -1; j<=1;j++){
+    					if(fullMap[i][j] == PASSABLE){
+    						buildUnit(3, i, j);
+    						System.out.println("built unit 3 at "+i+", "+j);
+    					}
+    				}
+    			}
+    			
     		}
     		return null;
     }
@@ -88,6 +102,40 @@ public class MyRobot extends BCAbstractRobot {
      * - consisting of one set of { x,y } coordinates if one source of karbonite exists
      * - consisting of multiple sets of { x,y } coordinates if multiple sources of karbonite exists
      */
+    private void getFMap() // makes fullMap
+	{
+		boolean[][] m = getPassableMap();
+		boolean[][] k = getKarboniteMap();
+		boolean[][] f = getFuelMap();
+
+		fullMap = new int[m.length][m.length];
+
+		int h = m.length;
+		int w = h;
+
+		for(int i = 0; i < h; i++)
+		{
+			for(int j = 0; j < w; j++)
+			{
+				if(!m[i][j])
+				{
+					fullMap[i][j] = IMPASSABLE;
+				}
+				else if(k[i][j])
+				{
+					fullMap[i][j] = KARBONITE;
+				}
+				else if(f[i][j])
+				{
+					fullMap[i][j] = FUEL;
+				}
+				else
+				{
+					fullMap[i][j] = PASSABLE;
+				}
+			}
+		}
+	}
     private ArrayList<int[]> closestFuelInBounds(int range1, int range2)
     {
     		int min = range1;
