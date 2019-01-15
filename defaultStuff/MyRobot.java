@@ -16,6 +16,16 @@ public class MyRobot extends BCAbstractRobot {
 	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int[] encodedCastleLocs = new int[3];
 	private int encodedLocError; // Only for use by castles in first few turns
+	private final int[][] adjacentSpaces = new int[][] {
+		new int[] {0,1},
+		new int[] {-1,1},
+		new int[] {-1,0},
+		new int[] {-1,-1},
+		new int[] {0,-1},
+		new int[] {1,-1},
+		new int[] {1,0},
+		new int[] {1,1}
+	};
 
 	public Action turn() {
 		if(me.turn == 1)
