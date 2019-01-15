@@ -13,4 +13,6 @@
 
 - Micro for units to spread out so that preachers can't attack multiple
 	
+- findBestMineCluster
+	
 - unimportant: Update function to get reflection direction for edge case that devs will prob. make where map is symmetric both ways except castles
