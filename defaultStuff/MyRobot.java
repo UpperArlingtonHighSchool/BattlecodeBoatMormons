@@ -11,9 +11,9 @@ public class MyRobot extends BCAbstractRobot {
 	private final int KARBONITE = 1;
 	private final int FUEL = 2;
 	private final int[] attackPriority = new int[] { 4, 5, 3, 0, 1, 2 }; // 0: Castle, 1: Church, 2: Pilgrim, 3:
-																			// Crusader, 4: Prophet,
+	// Crusader, 4: Prophet,
 	private boolean hRefl; // true iff reflected horizontally 5: Preacher. Feel free to mess with order in
-							// your robots.
+	// your robots.
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
 	private int[][] robotMap;
@@ -25,14 +25,13 @@ public class MyRobot extends BCAbstractRobot {
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int encodedLocError; // Only for use by castles in first few turns
 	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
-					// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
-					// separately; don't worry 'bout it.
-	
+	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
+	// separately; don't worry 'bout it.
+
 	public Action turn() {
 		if (me.turn == 1) {
 			getFMap();
 			hRefl = getReflDir();
-<<<<<<< HEAD
 
 			/*
 			 * if(hRefl) // Testing hRefl and fullMap { log("hor"); } else { log("vert"); }
@@ -40,9 +39,8 @@ public class MyRobot extends BCAbstractRobot {
 			 * String boop; for(int[] r : fullMap) { boop = ""; for(int c : r) { boop += c +
 			 * " "; } log(boop); }
 			 */
-=======
 			setXorKey();
-			
+
 			/*		if(hRefl) // Testing hRefl and fullMap
 			{
 				log("hor");
@@ -62,7 +60,6 @@ public class MyRobot extends BCAbstractRobot {
 				}
 				log(boop);
 			}*/
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
 		}
 		robotMap = getVisibleRobotMap();
 		switch (me.unit) {
@@ -113,24 +110,21 @@ public class MyRobot extends BCAbstractRobot {
 			return buildUnit(SPECS.PILGRIM, 0, 1);
 		}
 
-<<<<<<< HEAD
 		else if (me.turn == 3) {
 			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
-=======
+		}
 		else if(me.turn == 3)
 		{
 			castleTalk(encodedLocError ^ (xorKey % 256)); // Only 2 bits so feel free to add more info and also quite unimportant overall
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
 		}
 
-<<<<<<< HEAD
 		else if (me.turn == 4) {
 			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
-=======
+		}
 		else if(me.turn == 4)
 		{
 			castleTalk(encodedLocError ^ (xorKey % 256)); // Only 2 bits so feel free to add more info and also quite unimportant overall
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
+
 
 			for (int i = 1; i < numCastles; i++) {
 				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
@@ -154,15 +148,15 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1) {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
-<<<<<<< HEAD
+
 			/*
 			 * String str = "{"; // Testing that pilgrims know where all castles are for(int
 			 * i = 0; i < numCastles; i++) { str += "{"; for(int j = 0; j < 2; j++) { str +=
 			 * plainCastleLocs[i][j] + ", "; } str = str.substring(0, str.length() - 2) +
 			 * "}, "; } str = str.substring(0, str.length() - 2) + "}"; log(str);
 			 */
-=======
-			
+
+
 			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
@@ -175,7 +169,6 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			str = str.substring(0, str.length() - 2) + "}";
 			log(str);*/
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
 		}
 		return null;
 	}
@@ -248,7 +241,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		return true; // If it gets here, it's reflected both ways.
 	}
-	
+
 	private int[] findClosestKarbo() {
 		int minDistance = fullMap.length * fullMap.length;
 		int[] ans;
@@ -281,7 +274,7 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-<<<<<<< HEAD
+
 	private int[] findClosestFuel() {
 		int minDistance = fullMap.length * fullMap.length;
 		int[] ans = new int[] { 0, 0 };
@@ -314,9 +307,6 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	private void sendOwnLoc() // Call first and second turn for castles to send their location to other
-								// castles
-=======
 	private void setXorKey()
 	{
 		int[] parts = new int[4];
@@ -324,12 +314,12 @@ public class MyRobot extends BCAbstractRobot {
 		parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
 		parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
 		parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
-		
+
 		xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
 	}
-	
+
 	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
+
 	{
 		int[] plain; // 0 is location on your half of map; 1 is how far across
 		int[] encoded = new int[2]; // ditto above
@@ -375,52 +365,54 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in
-										// corresponding
+	// corresponding
 	{ // index of plainCastleLocs.
 		int[] plain = new int[2];
 
 		plain[0] = (int) Math.floor(((xorKey % 256) ^ encodedCastleLocs[i]) / 8) * 2;
 
-<<<<<<< HEAD
+
 		if ((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2)) {
 			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + 3;
 		} else {
 			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
-=======
-		if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
-		{
-			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + 3;
-		}
-		else
-		{
-			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
-		}
 
-		if (hRefl) {
-			plainCastleLocs[i][0] = plain[1];
-			plainCastleLocs[i][1] = plain[0];
-		} else {
-			plainCastleLocs[i] = plain;
+			if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
+			{
+				plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + 3;
+			}
+			else
+			{
+				plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
+
+			}
+
+			if (hRefl) {
+				plainCastleLocs[i][0] = plain[1];
+				plainCastleLocs[i][1] = plain[0];
+			} else {
+				plainCastleLocs[i] = plain;
+			}
 		}
 	}
 
 	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of
-													// other castles
+	// other castles
 	{
-<<<<<<< HEAD
+
 		if (hRefl) {
-=======
-		adjustment ^= xorKey % 256; 
-		
-		if(hRefl)
-		{
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
-			plainCastleLocs[i][1] += adjustment % 2;
-			plainCastleLocs[i][0] += (int) Math.floor(adjustment / 2);
-		} else {
-			plainCastleLocs[i][0] += adjustment % 2;
-			plainCastleLocs[i][1] += (int) Math.floor(adjustment / 2);
+
+			adjustment ^= xorKey % 256; 
+
+			if(hRefl)
+			{
+
+				plainCastleLocs[i][1] += adjustment % 2;
+				plainCastleLocs[i][0] += (int) Math.floor(adjustment / 2);
+			} else {
+				plainCastleLocs[i][0] += adjustment % 2;
+				plainCastleLocs[i][1] += (int) Math.floor(adjustment / 2);
+			}
 		}
 	}
 
@@ -430,11 +422,9 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (numCastles == 2) {
 			signal(encodedCastleLocs[1] * 257, r2);
-<<<<<<< HEAD
 		} else if (numCastles == 3) {
 			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
 		} else if (numCastles != 1) {
-=======
 		}
 		else if(numCastles == 3)
 		{
@@ -442,8 +432,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else if(numCastles != 1)
 		{
->>>>>>> branch 'master' of https://github.com/UpperArlingtonHighSchool/BattlecodeBoatMormons.git
-			log("oh no numCastles is " + numCastles);
+				log("oh no numCastles is " + numCastles);
 		}
 	}
 
@@ -512,7 +501,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in
-										// attackPriority, of lowest ID
+	// attackPriority, of lowest ID
 	{
 		Robot[] robs = getEnemiesInRange();
 
@@ -554,7 +543,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	// For preacherAttack()
 	private Robot[] getPreacherKillableRobots() // Now returns only units with max health <= 20 in visibility range, but
-												// can be edited
+	// can be edited
 	{ // to also return damaged units or units 1 space outside visibility range
 		Robot[] robs = getVisibleRobots();
 		ArrayList<Robot> killable = new ArrayList<Robot>();
@@ -570,7 +559,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	// For preacherAttack()
 	private Robot[] getAllies() // Now returns only visible allies, but preachers can damage non-visible allies
-								// :( plis update
+	// :( plis update
 	{
 		Robot[] robs = getVisibleRobots();
 		ArrayList<Robot> allies = new ArrayList<Robot>();
@@ -625,7 +614,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill
-											// enemies, then damage
+	// enemies, then damage
 	{ // enemy combat units, then damage enemy buildings
 		Robot[] killable = getPreacherKillableRobots();
 		Robot[] allies = getAllies();
