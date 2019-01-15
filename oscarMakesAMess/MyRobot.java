@@ -14,6 +14,7 @@ public class MyRobot extends BCAbstractRobot {
 	private ArrayList<int[]> karbosInUse = new ArrayList<>();
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>();
 	private ArrayList<int[]> currentPath = new ArrayList<>();
+	int[] avoid = new int[] { 0, 0 };
 	private int[] castleIds;
 	private int[][] castleLocations;
 	private int[][] fullMap;
@@ -196,13 +197,19 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		/*
-		 * if (currentPath != null && currentPath.size() > 0) { int[] nextMove =
-		 * currentPath.get(0); int dx = nextMove[0] - me.x; int dy = nextMove[1] - me.y;
-		 * if (robotMap[nextMove[1]][nextMove[0]] <= 0) { if (fuel >= (dx * dx + dy *
-		 * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) { currentPath.remove(0);
-		 * return move(dx, dy); } } }
-		 */
+
+		if (currentPath != null && currentPath.size() > 0) {
+			int[] nextMove = currentPath.get(0);
+			int dx = nextMove[0] - me.x;
+			int dy = nextMove[1] - me.y;
+			if (robotMap[nextMove[1]][nextMove[0]] <= 0) {
+				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
+					currentPath.remove(0);
+					return move(dx, dy);
+				}
+			}
+		}
+
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
 			if (castle != null) {
@@ -210,13 +217,24 @@ public class MyRobot extends BCAbstractRobot {
 				fuelsInUse.clear();
 				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
 			}
+
+			currentPath = bfs(HOME[0], HOME[1]);
+			if (currentPath == null) {
+				return null;
+			}
+			int[] nextMove = currentPath.get(0);
+			int dx = nextMove[0] - me.x;
+			int dy = nextMove[1] - me.y;
+			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
+				currentPath.remove(0);
+				return move(dx, dy);
+			}
+			return null;
 			/*
-			 * currentPath = bfs(HOME[0], HOME[1]); if (currentPath == null) { return null;
-			 * } int[] nextMove = currentPath.get(0); int dx = nextMove[0] - me.x; int dy =
-			 * nextMove[1] - me.y;
+			 * int[] move = tryMove(HOME[0], HOME[1]); if (move != null) { avoid[0] =
+			 * -move[0]; avoid[1] = -move[1]; } return move == null ? null : move(move[0],
+			 * move[1]);
 			 */
-			int[] move = tryMove(HOME[0], HOME[1]);
-			return move == null ? null : move(move[0], move[1]);
 		}
 		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
 			if (fuel == 0) {
@@ -225,20 +243,30 @@ public class MyRobot extends BCAbstractRobot {
 			return mine();
 		}
 		int[] location;
-		if (10 * numOfUnits > fuel) {
+		if (20 * numOfUnits > fuel) {
 			location = findClosestFuel();
 		} else {
 			location = findClosestKarbo();
 		}
+
+		currentPath = bfs(location[0], location[1]);
+		if (currentPath == null) {
+			return null;
+		}
+		int[] nextMove = currentPath.get(0);
+		int dx = nextMove[0] - me.x;
+		int dy = nextMove[1] - me.y;
+		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
+			currentPath.remove(0);
+			return move(dx, dy);
+		}
+		return null;
+
 		/*
-		 * currentPath = bfs(location[0], location[1]); if (currentPath == null) {
-		 * return null; } int[] nextMove = currentPath.get(0); int dx = nextMove[0] -
-		 * me.x; int dy = nextMove[1] - me.y; if (fuel >= (dx * dx + dy * dy) *
-		 * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) { currentPath.remove(0); return
-		 * move(dx, dy); } return null;
+		 * if (location == null) { return null; } int[] move = tryMove(location[0],
+		 * location[1]); if (move != null) { avoid[0] = -move[0]; avoid[1] = -move[1]; }
+		 * return move == null ? null : move(move[0], move[1]);
 		 */
-		int[] move = tryMove(location[0], location[1]);
-		return move == null ? null : move(move[0], move[1]);
 	}
 
 	public void getFullMap() {
@@ -302,7 +330,11 @@ public class MyRobot extends BCAbstractRobot {
 					int[] temp = new int[] { x, y };
 					for (int[] out : karbosInUse) {
 						if (out[0] == temp[0] && out[1] == temp[1]) {
-							continue looping;
+							if (robotMap[y][x] == 0) {
+								karbosInUse.remove(out);
+							} else {
+								continue looping;
+							}
 						}
 					}
 					if (robotMap[y][x] > 0) {
@@ -330,7 +362,11 @@ public class MyRobot extends BCAbstractRobot {
 					int[] temp = new int[] { x, y };
 					for (int[] out : fuelsInUse) {
 						if (out[0] == temp[0] && out[1] == temp[1]) {
-							continue looping;
+							if (robotMap[y][x] == 0) {
+								fuelsInUse.remove(out);
+							} else {
+								continue looping;
+							}
 						}
 					}
 					if (robotMap[y][x] > 0) {
@@ -349,54 +385,61 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	// WHY ARE THESE SO SLOW
+	// bfs is reaaaally fast now
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
-		log("goal is (" + goalX + ", " + goalY + ")");
 		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		LinkedList<MapSpot> spots = new LinkedList<>();
-		MapSpot spot = new MapSpot(null, me.x, me.y, 0, 0);
-		main: while (spot.x != goalX || spot.y != goalY) {
-			int left = Math.max(0, spot.x - maxRadius);
-			int top = Math.max(0, spot.y - maxRadius);
-			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
-			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+		int[] from = new int[fullMap.length * fullMap.length];
+		for (int i = 0; i < from.length; i++) {
+			from[i] = -1;
+		}
+		LinkedList<int[]> spots = new LinkedList<>();
+		int[] spot = new int[] { me.x, me.y };
+		main: while (!(spot[0] == goalX && spot[1] == goalY)) {
+			int left = Math.max(0, spot[0] - maxRadius);
+			int top = Math.max(0, spot[1] - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
 			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
-			MapSpot closestPoint = null;
+			int[] closestPoint = null;
 			for (int x = left; x <= right; x++) {
-				int dx = x - spot.x;
+				int dx = x - spot[0];
 				looping: for (int y = top; y <= bottom; y++) {
-					int dy = y - spot.y;
+					int dy = y - spot[1];
 					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
 							&& robotMap[y][x] <= 0) {
-						MapSpot newSpot = new MapSpot(spot, x, y, 0, 0);
-						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
+						if (from[y * fullMap.length + x] != -1) {
+							continue looping;
+						}
+						int[] newSpot = new int[] { x, y };
+						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
+
+						/*if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
 							closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
 							closestPoint = newSpot;
 							continue looping;
-						}
-						for (MapSpot inThere : spots) {
-							if (inThere.equals(newSpot)) {
-								continue looping;
-							}
-						}
+						}*/
+
 						spots.add(newSpot);
 					}
 				}
 			}
-			if (closestPoint != null) {
+
+			/*if (closestPoint != null) {
 				spot = closestPoint;
 				break main;
-			}
+			}*/
+
 			spot = spots.poll();
 			if (spot == null) {
 				return null;
 			}
 		}
 		ArrayList<int[]> ans = new ArrayList<>();
-		while (spot.parent != null) {
-			ans.add(0, new int[] { spot.x, spot.y });
-			spot = spot.parent;
+		while (from[spot[1] * fullMap.length + spot[0]] != -1) {
+			ans.add(0, spot);
+			int prevSpot = from[spot[1] * fullMap.length + spot[0]];
+			spot = new int[] { prevSpot % fullMap.length, (int) (prevSpot / fullMap.length) };
 		}
 		return ans;
 	}
@@ -543,19 +586,20 @@ public class MyRobot extends BCAbstractRobot {
 						(goalX - newX) * (goalX - newX) + (goalY - newY) * (goalY - newY) };
 			}
 		}
-		log(index + " viable moves total");
 		if (index == 0) {
 			return null;
 		}
 		int min = fullMap.length * fullMap.length + 1;
 		int minIndex;
 		for (int i = 0; i < index; i++) {
-			if (moves[i][2] < min) {
+			if (moves[i][2] < min && !(moves[i][0] == avoid[0] && moves[i][1] == avoid[1])) {
 				min = moves[i][2];
 				minIndex = i;
 			}
 		}
-		log("found (" + moves[minIndex][0] + ", " + moves[minIndex][1] + ")");
+		if (min == fullMap.length * fullMap.length + 1) {
+			return null;
+		}
 		return moves[minIndex];
 	}
 }
