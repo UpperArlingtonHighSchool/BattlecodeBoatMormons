@@ -37,7 +37,7 @@ public class MyRobot extends BCAbstractRobot {
 				for(int j = -1; j<=1; j++){
 					if(fullMap[me.y + i][me.x + j] == PASSABLE)
 					{
-						buildUnit(3, i, j);
+						return buildUnit(3, me.y+i, me.x+j);
 						System.out.println("built unit 3 at "+i+", "+j);
 					}
 				}
