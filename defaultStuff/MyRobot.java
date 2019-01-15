@@ -143,13 +143,6 @@ public class MyRobot extends BCAbstractRobot {
 				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
 			}
 			getEnemyCastleLocs();
-
-			/*
-			 * String str = "{"; // Testing that castles know where all castles are for(int
-			 * i = 0; i < numCastles; i++) { str += "{"; for(int j = 0; j < 2; j++) { str +=
-			 * plainCastleLocs[i][j] + ", "; } str = str.substring(0, str.length() - 2) +
-			 * "}, "; } str = str.substring(0, str.length() - 2) + "}"; log(str);
-			 */
 		}
 	}
 
@@ -161,14 +154,6 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1) {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
-
-			/*
-			 * String str = "{"; // Testing that pilgrims know where all castles are for(int
-			 * i = 0; i < numCastles; i++) { str += "{"; for(int j = 0; j < 2; j++) { str +=
-			 * plainCastleLocs[i][j] + ", "; } str = str.substring(0, str.length() - 2) +
-			 * "}, "; } str = str.substring(0, str.length() - 2) + "}"; log(str);
-			 */
-
 
 			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
@@ -419,7 +404,6 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(hRefl)
 			{
-
 				plainCastleLocs[i][1] += adjustment % 2;
 				plainCastleLocs[i][0] += (int) Math.floor(adjustment / 2);
 			} else {
@@ -435,13 +419,10 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (numCastles == 2) {
 			signal(encodedCastleLocs[1] * 257, r2);
-		} else if (numCastles == 3) {
-			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
-		} else if (numCastles != 1) {
 		}
-		else if(numCastles == 3)
+		else if (numCastles == 3)
 		{
-			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[2], r2);
+			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
 		}
 		else if(numCastles != 1)
 		{
