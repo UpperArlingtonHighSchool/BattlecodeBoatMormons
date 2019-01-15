@@ -1,51 +1,131 @@
 package bc19;
 
 import bc19.*;
+
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
-	public int turn;
 	private final int IMPASSABLE = -1;
 	private final int PASSABLE = 0;
 	private final int KARBONITE = 1;
 	private final int FUEL = 2;
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 1, 2}; // 0: Castle, 1: Church, 2: Pilgrim, 3: Crusader, 4: Prophet,
 	private boolean hRefl; // true iff reflected horizontally				 5: Preacher. Feel free to mess with order in your robots.
+	private int[][] robotMap;
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
-	private int numCastles = 1;
-	
+	private int numCastles;
+	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
+	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+	private int[] encodedCastleLocs = new int[3];
+	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+	private int encodedLocError; // Only for use by castles in first few turns
+	private boolean attack;
 
 	public Action turn() {
-		turn++;
-
-		if(turn == 1)
+		log("okay let's just start here");
+		if(me.turn == 1)
 		{
 			getFMap();
 			hRefl = getReflDir();
-			
-			if(me.unit == SPECS.CASTLE) // set numCastles
-			{
-				for(Robot rob : getVisibleRobots())
-				{
-					if(rob.team == me.team)
-					{
-						numCastles += 1;
-					}
-				}
-			}
 		}
-
-		if (me.unit == SPECS.CASTLE) { return castle(); }
-		else if (me.unit == SPECS.CHURCH) { return church(); }
-		else if (me.unit == SPECS.PILGRIM) { return pilgrim(); }
-		else if (me.unit == SPECS.CRUSADER) { return crusader(); }
-		else if (me.unit == SPECS.PROPHET) { return prophet(); }
-		else if (me.unit == SPECS.PREACHER) { return preacher(); }
+		robotMap = getVisibleRobotMap();
+		switch (me.unit) {
+		case 0: return castle();
+		case 1: return church();
+		case 2: return pilgrim();
+		case 3: return crusader();
+		case 4: return prophet();
+		case 5: return preacher();
+		}
 		return null;
 	}
 
 	private Action castle()
 	{
+		if(me.turn == 1)
+		{
+			numCastles = 1;
+			castleIDs[0] = me.id;
+
+			for(Robot rob : getVisibleRobots())
+			{
+				if(rob.team == me.team && rob.id != me.id)
+				{
+					castleIDs[numCastles] = rob.id;
+					numCastles += 1;
+				}
+			}
+
+			if(numCastles > 1)
+			{
+				sendOwnLoc();
+			}
+		}
+
+		else if(me.turn == 2)
+		{
+			if(numCastles > 1)
+			{
+				sendOwnLoc();
+			}
+
+			for (int i = 1; i < numCastles; i++)
+			{
+				encodedCastleLocs[i] = getRobot(castleIDs[i]).castle_talk;
+				decodeCastleLoc(i);
+			}
+
+			sendCastleLocs(1);
+		}
+
+		else if(me.turn == 3)
+		{
+			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
+		}
+
+		else if(me.turn == 4)
+		{
+			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
+
+			for (int i = 1; i < numCastles; i++)
+			{
+				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
+			}
+			getEnemyCastleLocs();
+		}
+
+		else if(me.turn == 6)
+		{
+			sendCastleLocs(5);
+		}
+
+		if(me.turn > 1 && me.turn < 7)
+		{
+			if(hRefl)
+			{
+				if(me.x < fullMap.length / 2)
+				{
+					return buildUnit(SPECS.CRUSADER, 1, me.turn % 3 - 1);
+				}
+				else
+				{
+					return buildUnit(SPECS.CRUSADER, -1, me.turn % 3 - 1);
+				}
+			}
+			else
+			{
+				if(me.y < fullMap.length / 2)
+				{
+					return buildUnit(SPECS.CRUSADER, me.turn % 3 - 1, 1);
+				}
+				else
+				{
+					return buildUnit(SPECS.CRUSADER, me.turn % 3 - 1, -1);
+				}
+			}
+		}
+
 		return null;
 	}
 
@@ -64,6 +144,98 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action crusader()
 	{
+		log("please");
+		
+		if(me.turn == 1)
+		{
+			log("in here");
+			
+			attack = false;
+
+			for(Robot rob : getVisibleRobots())
+			{
+				if(rob.unit == SPECS.CASTLE)
+				{
+					castleIDs[0] = rob.id;
+				}
+			}
+
+			log("yup still");
+			
+			if(hRefl)
+			{
+				if(me.x < fullMap.length / 2)
+				{
+					log("ummm1");
+					return move(1, 0);
+				}
+				else
+				{
+					log("ummm2");
+					return move(-1, 0);
+				}
+			}
+			else
+			{
+				if(me.y < fullMap.length / 2)
+				{
+					return move(0, 1);
+
+				}
+				else
+				{
+					return move(0, -1);
+				}
+			}
+		}
+
+		log("done moov");
+		
+		if(!attack && isRadioing(getRobot(castleIDs[0])))
+		{
+			log("get brod kast");
+			{
+				getAllCastleLocs();
+				getEnemyCastleLocs();
+
+				attack = true;
+			}
+		}
+		else
+		{
+			AttackAction atk = autoAttack();
+			if(atk == null)
+			{
+				log("no attacc");
+				if(hRefl)
+				{
+					if(me.x < fullMap.length / 2)
+					{
+						return(move(2, 0));
+					}
+					else
+					{
+						return(move(-2, 0));
+					}
+				}
+				else
+				{
+					if(me.y < fullMap.length / 2)
+					{
+						return(move(0, 2));
+					}
+					else
+					{
+						return(move(0, -2));
+					}				}
+			}
+			else
+			{
+				log("ATTTACAACACKCKKKAKA");
+				return atk;
+			}
+		}
+
 		return null;
 	}
 
@@ -85,11 +257,11 @@ public class MyRobot extends BCAbstractRobot {
 		boolean[][] m = getPassableMap();
 		boolean[][] k = getKarboniteMap();
 		boolean[][] f = getFuelMap();
-		
-		fullMap = new int[m.length][m[0].length];
-		
+
+		fullMap = new int[m.length][m.length];
+
 		int h = m.length;
-		int w = m[0].length;
+		int w = h;
 
 		for(int i = 0; i < h; i++)
 		{
@@ -152,7 +324,171 @@ public class MyRobot extends BCAbstractRobot {
 
 		return true; // If it gets here, it's reflected both ways.
 	}
-	
+
+	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
+	{
+		int[] plain; // 0 is location on your half of map; 1 is how far across
+		int[] encoded = new int[2]; // ditto above
+		int temp;
+
+		if(hRefl)
+		{
+			plain = new int[] {me.y, me.x};
+		}
+		else
+		{
+			plain = new int[] {me.x, me.y};
+		}
+
+		encodedLocError = 0;
+		encodedLocError += plain[0] % 2;
+
+		encoded[0] = (int) Math.floor(plain[0] / 2);
+		if(plain[1] >= fullMap.length / 2) // Same thing for opposite sides of the map
+		{
+			temp = (plain[1] - (int) Math.floor(fullMap.length / 2) - 8);
+			encodedLocError += 2 * (temp % 2);
+			encoded[1] = (int) Math.floor(temp / 2);
+		}
+		else
+		{
+			temp = (plain[1] - 3);
+			encodedLocError += 2 * (temp % 2);
+			encoded[1] = (int) Math.floor(temp / 2);
+		}
+
+		if(encoded[1] >= 8)
+		{
+			log("encoded location across value was too big (it was " + encoded[1] + "), it has been set to 7.");
+			encoded[1] = 7;
+		}
+
+		if(encoded[0] >= 32 || encoded[0] < 0)
+		{
+			log("oh no encoded[0] is " + encoded[0]);
+		}
+		if(encoded[1] >= 8 || encoded[1] < 0)
+		{
+			log("oh no encoded[1] is " + encoded[1]);
+		}
+
+		plainCastleLocs[0] = new int[] {me.x, me.y};
+		encodedCastleLocs[0] = encoded[0] * 8 + encoded[1];
+		castleTalk(encodedCastleLocs[0]);
+	}
+
+	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding
+	{									// index of plainCastleLocs.
+		int[] plain = new int[2];
+
+		plain[0] = (int) Math.floor(encodedCastleLocs[i] / 8) * 2;
+
+		if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
+		{
+			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + 3;
+		}
+		else
+		{
+			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
+		}
+
+
+		if(hRefl)
+		{
+			plainCastleLocs[i][0] = plain[1];
+			plainCastleLocs[i][1] = plain[0];
+		}
+		else
+		{
+			plainCastleLocs[i] = plain;
+		}
+	}
+
+	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of other castles
+	{
+		if(hRefl)
+		{
+			plainCastleLocs[i][1] += adjustment % 2;
+			plainCastleLocs[i][0] += (int) Math.floor(adjustment / 2);
+		}
+		else
+		{
+			plainCastleLocs[i][0] += adjustment % 2;
+			plainCastleLocs[i][1] += (int) Math.floor(adjustment / 2);
+		}
+	}
+
+	private void sendCastleLocs(int r2) // Whenever you make a pilgrim, call this. Will give
+	{		// how far away pilgrim has to be in each direction to be closer to other castle.
+
+		if(numCastles == 2)
+		{
+			signal(encodedCastleLocs[1] * 257, r2);
+		}
+		else if(numCastles == 3)
+		{
+			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
+		}
+		else if(numCastles != 1)
+		{
+			log("oh no numCastles is " + numCastles);
+		}
+	}
+
+	private void getAllCastleLocs() // Call on first turn of unit to get locations of and number of castles
+	{
+		for(Robot rob : getVisibleRobots())
+		{
+			if(rob.unit == SPECS.CASTLE)
+			{
+				castleIDs[0] = rob.id;
+
+				plainCastleLocs[0] = new int[] {rob.x, rob.y};
+
+				if(isRadioing(rob))
+				{
+					encodedCastleLocs[1] = (int) Math.floor(rob.signal / 256);
+					encodedCastleLocs[2] = rob.signal % 256;
+
+					if(encodedCastleLocs[1] == encodedCastleLocs[2])
+					{
+						numCastles = 2;
+						decodeCastleLoc(1);
+					}
+					else
+					{
+						numCastles = 3;
+						decodeCastleLoc(1);
+						decodeCastleLoc(2);
+					}
+				}
+				else
+				{
+					numCastles = 1;
+				}
+
+				break;
+			}
+		}
+	}
+
+	private void getEnemyCastleLocs()
+	{
+		for(int i = 0; i < 3; i++)
+		{
+			if(hRefl)
+			{
+				enemyCastleLocs[i][0] = fullMap.length - 1 - plainCastleLocs[i][0];
+				enemyCastleLocs[i][1] = plainCastleLocs[i][1];
+			}
+			else
+			{
+				enemyCastleLocs[i][0] = plainCastleLocs[i][0];
+				enemyCastleLocs[i][1] = fullMap.length - 1 - plainCastleLocs[i][1];
+			}
+		}
+	}
+
 	private AttackAction autoAttack() // NOT TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
 	{
 		Robot[] robs = getVisibleRobots();
@@ -170,11 +506,11 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else
 		{
-			log("you're trying to attack with a non-combat robot and autoAttack() is prolly gonna return an error");
+			log("you're trying to attack with a non-combat robot and autoAttack() is gonna return an error");
 			minRange = 0;
 			range = 0;
 		}
-		
+
 		boolean found = false;
 		int i = 0;
 		while(!found) // make priorRobs
@@ -190,7 +526,16 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			i++;
 		}
-		
+
+		if(priorRobs.size() == 1)
+		{
+			return(attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y));
+		}
+		else if(priorRobs.size() == 0)
+		{
+			return null;
+		}
+
 		int lowestID = 4097;
 		for(int j = 0; j < priorRobs.size(); j++)
 		{
@@ -199,7 +544,113 @@ public class MyRobot extends BCAbstractRobot {
 				lowestID = priorRobs.get(j).id;
 			}
 		}
-		
+
 		return attack(getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y);
 	}
+
+	// WHY ARE THESE SO SLOW
+	private ArrayList<int[]> bfs(int goalX, int goalY) {
+		log("goal is (" + goalX + ", " + goalY + ")");
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		LinkedList<MapSpot> spots = new LinkedList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, 0);
+		main: while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
+			MapSpot closestPoint = null;
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot.x;
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						MapSpot newSpot = new MapSpot(spot, x, y, 0, 0);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
+							closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
+							closestPoint = newSpot;
+							continue looping;
+						}
+						for (MapSpot inThere : spots) {
+							if (inThere.equals(newSpot)) {
+								continue looping;
+							}
+						}
+						spots.add(newSpot);
+					}
+				}
+			}
+			if (closestPoint != null) {
+				spot = closestPoint;
+				break main;
+			}
+			spot = spots.poll();
+			if (spot == null) {
+				return null;
+			}
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(0, new int[] { spot.x, spot.y });
+			spot = spot.parent;
+		}
+		return ans;
+	}
+
+	// right now, BFS works better. it shouldn't seem the way that it be, but it do. fix it if you dare...
+	private ArrayList<int[]> aStar(int goalX, int goalY) {
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		ArrayList<MapSpot> spots = new ArrayList<>();
+		MapSpot spot = new MapSpot(null, me.x, me.y, 0, (Math.abs(goalX - me.x) + Math.abs(goalY - me.y)) * fuelCost);
+		main: while (spot.x != goalX || spot.y != goalY) {
+			int left = Math.max(0, spot.x - maxRadius);
+			int top = Math.max(0, spot.y - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot.x;
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot.y;
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + (dx * dx + dy * dy) * fuelCost,
+								(Math.abs(goalX - x) + Math.abs(goalY - y)) * fuelCost);
+						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < (goalX - me.x) * (goalX - me.x)
+								+ (goalY - me.y) * (goalY - me.y)) {
+							spot = toAdd;
+							break main;
+						}
+						for (int i = 0; i < spots.size(); i++) {
+							if (toAdd.compareTo(spots.get(i)) < 0) {
+								spots.add(i, toAdd);
+								for (int j = i + 1; j < spots.size(); j++) {
+									if (spots.get(j).equals(toAdd)) {
+										spots.remove(j);
+										continue looping;
+									}
+								}
+								continue looping;
+							} else if (toAdd.equals(spots.get(i))) {
+								continue looping;
+							}
+						}
+						spots.add(toAdd);
+					}
+				}
+			}
+			spot = spots.get(0);
+			spots.remove(0);
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (spot.parent != null) {
+			ans.add(new int[] { spot.x, spot.y });
+			spot = spot.parent;
+		}
+		return ans;
+	}
+
 }
