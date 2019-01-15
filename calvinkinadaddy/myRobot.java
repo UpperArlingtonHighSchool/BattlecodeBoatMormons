@@ -10,7 +10,7 @@ be constantly searching for incoming mass crusader
 */
 public class MyRobot extends BCAbstractRobot {
 	public int turn;
-	public int[][] fullMap;
+	public int[][] fullMap = new int[getPassableMap().length][getPassableMap().length];
 	private final int IMPASSABLE = -1;
 	private final int PASSABLE = 0;
 	private final int KARBONITE = 1;
