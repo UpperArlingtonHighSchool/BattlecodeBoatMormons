@@ -30,7 +30,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	public Action castle()
 	{
-		if (turn == 1)
+		if (turn == 1&&me.team==1)
 		{
 			getFMap();
 			for(int i = -1; i<=1; i++){
@@ -38,7 +38,6 @@ public class MyRobot extends BCAbstractRobot {
 					if(fullMap[me.y + i][me.x + j] == PASSABLE)
 					{
 						log("built preacher at "+i+", "+j);
-
 						return buildUnit(5, j, i);
 						
 					}
@@ -46,6 +45,23 @@ public class MyRobot extends BCAbstractRobot {
 			}
 
 		}
+		else if (turn == 1&&me.team==0)
+		{
+			getFMap();
+			for(int i = -1; i<=1; i++){
+				for(int j = -1; j<=1; j++){
+					if(fullMap[me.y + i][me.x + j] == PASSABLE)
+					{
+						log("built crusader at "+i+", "+j);
+						return buildUnit(3, j, i);
+						
+					}
+				}
+			}
+
+		}
+		getFMap();
+		
 		return null;
 	}
 
