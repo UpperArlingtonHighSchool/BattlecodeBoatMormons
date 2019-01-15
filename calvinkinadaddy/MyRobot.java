@@ -37,8 +37,9 @@ public class MyRobot extends BCAbstractRobot {
 				for(int j = -1; j<=1; j++){
 					if(fullMap[me.y + i][me.x + j] == PASSABLE)
 					{
-						log("built unit 3 at "+i+", "+j);
-						return buildUnit(3, j, i);
+						log("built preacher at "+i+", "+j);
+
+						return buildUnit(5, j, i);
 						
 					}
 				}
@@ -254,7 +255,14 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		//search if 
 		Robot[] bots = getVisibleRobots();
-		System.out.println(bots);
+		//log(""+bots);
+		//getVisibleRobotMap();
+		for(int i = 0;i<bots.length; i++){
+			if(bots[i].unit == 3&&bots[i].team==0) {//crusader - red is offense
+				log("found enemy crusader at "+bots[i].x+", "+bots[i].y);
+				return this.attack(bots[i].x, bots[i].y);
+			}
+		}
 		return null;
 	}
 }
