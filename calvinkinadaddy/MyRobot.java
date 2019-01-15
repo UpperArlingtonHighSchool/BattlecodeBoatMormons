@@ -38,7 +38,7 @@ public class MyRobot extends BCAbstractRobot {
 					if(fullMap[me.y + i][me.x + j] == PASSABLE)
 					{
 						log("built unit 3 at "+i+", "+j);
-						return buildUnit(3, me.x+j, me.y+i);
+						return buildUnit(3, j, i);
 						
 					}
 				}
