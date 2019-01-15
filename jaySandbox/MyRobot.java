@@ -14,18 +14,22 @@ public class MyRobot extends BCAbstractRobot {
 							// your robots.
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
 	private int numCastles;
+	private int[][] robotMap;
+	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
+	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
 	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int[] encodedCastleLocs = new int[3];
 	private int encodedLocError; // Only for use by castles in first few turns
-	private final int[][] adjacentSpaces = new int[][] { // Matrix of adjacent spaces, relative to the Robot
-			new int[] { 0, 1 }, new int[] { -1, 1 }, new int[] { -1, 0 }, new int[] { -1, -1 }, new int[] { 0, -1 },
-			new int[] { 1, -1 }, new int[] { 1, 0 }, new int[] { 1, 1 } };
+	private int[][] adjacentSpaces; // Matrix of adjacent spaces, relative to the Robot
 
 	public Action turn() {
 		if (me.turn == 1) {
 			getFMap();
 			hRefl = getReflDir();
+			adjacentSpaces = new int[][] { 
+				new int[] { 0, 1 }, new int[] { -1, 1 }, new int[] { -1, 0 }, new int[] { -1, -1 }, new int[] { 0, -1 },
+				new int[] { 1, -1 }, new int[] { 1, 0 }, new int[] { 1, 1 } };
 
 			/*
 			 * if(hRefl) // Testing hRefl and fullMap { log("hor"); } else { log("vert"); }
@@ -33,6 +37,7 @@ public class MyRobot extends BCAbstractRobot {
 			 * String boop; for(int[] r : fullMap) { boop = ""; for(int c : r) { boop += c +
 			 * " "; } log(boop); }
 			 */
+			robotMap = getVisibleRobotMap();
 		}
 
 		switch (me.unit) {
@@ -80,6 +85,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 
 			sendCastleLocs(1);
+			
 			int[] buildSpace = whereBuildPilgrim();
 			if (buildSpace != null)
 			{
@@ -109,7 +115,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	private int[] whereBuildPilgrim() {
 		// step 1: find nearest karbonite
-		int[] targetTile = closestOpenKarbo();
+		int[] targetTile = findClosestKarbo();
 		// step 2: make list of open adjacent spaces
 		ArrayList<int[]> openAdj = getOpenAdj();
 		if (openAdj.isEmpty()) return null;
@@ -118,8 +124,8 @@ public class MyRobot extends BCAbstractRobot {
 		for (int i = 1; i < openAdj.size(); i++)
 		{
 			int[] newTile = openAdj.get(i);
-			int currentDistanceToTarget = (int) (Math.pow(closestTile[0] + me.x - targetTile[0], 2) + Math.pow(closestTile[1] + me.x - targetTile[1], 2));
-			int newDistanceToTarget = (int) (Math.pow(newTile[0] + me.x - targetTile[0], 2) + Math.pow(newTile[1] + me.x - targetTile[1], 2));
+			int currentDistanceToTarget = (int) (Math.pow(closestTile[0] + me.x - targetTile[0], 2) + Math.pow(closestTile[1] + me.y - targetTile[1], 2));
+			int newDistanceToTarget = (int) (Math.pow(newTile[0] + me.x - targetTile[0], 2) + Math.pow(newTile[1] + me.y - targetTile[1], 2));
 			if (newDistanceToTarget < currentDistanceToTarget)
 			{
 				closestTile = newTile;
@@ -128,17 +134,53 @@ public class MyRobot extends BCAbstractRobot {
 		return closestTile;
 	}
 
-	private int[] closestOpenKarbo() {
-		return null;
+	private int[] findClosestKarbo() {
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans;
+		for (int x = 0; x < fullMap[0].length; x++) {
+			looping: for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == KARBONITE) {
+					int[] temp = new int[] { x, y };
+					for (int[] out : karbosInUse) {
+						if (out[0] == temp[0] && out[1] == temp[1]) {
+							if (robotMap[y][x] == 0) {
+								karbosInUse.remove(out);
+							} else {
+								continue looping;
+							}
+						}
+					}
+					if (robotMap[y][x] > 0) {
+						karbosInUse.add(temp);
+						continue looping;
+					}
+					int dx = x - me.x;
+					int dy = y - me.y;
+					if (dx * dx + dy * dy < minDistance) {
+						ans = temp;
+						minDistance = dx * dx + dy * dy;
+					}
+				}
+			}
+		}
+		return ans;
 	}
+	
 
 	private ArrayList<int[]> getOpenAdj() {
 		ArrayList<int[]> openAdj = new ArrayList<int[]>();
 		for (int[] space : adjacentSpaces)
 		{
-			if (fullMap[space[1]][space[0]] != -1 && getVisibleRobotMap()[space[1]][space[0]] == 0)
-			{
-				openAdj.add(space); // this space is good to go
+			log("Scanning for robot...");
+			int xcord = space[0] + me.x;
+			int ycord = space[1] + me.y;
+			if (xcord < fullMap.length && xcord > -1 && xcord < fullMap.length && xcord > -1)
+				{
+				if (fullMap[ycord][xcord] != -1 && getVisibleRobotMap()[ycord][xcord] == 0)
+				{
+					openAdj.add(space); // this space is good to go
+					log("No robot found!");
+				}
 			}
 		}
 		return openAdj;
