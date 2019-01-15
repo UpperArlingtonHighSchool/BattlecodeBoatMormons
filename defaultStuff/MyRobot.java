@@ -24,10 +24,23 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] encodedCastleLocs = new int[3];
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int encodedLocError; // Only for use by castles in first few turns
+	private final int[][] adjacentSpaces = new int[][] { //Matrix of adjacent spaces, relative to the Robot
+		new int[] {0,1},
+		new int[] {-1,1},
+		new int[] {-1,0},
+		new int[] {-1,-1},
+		new int[] {0,-1},
+		new int[] {1,-1},
+		new int[] {1,0},
+		new int[] {1,1}
+	}; 
+
+
 	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
+
 	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
 	// separately; don't worry 'bout it.
-
+	
 	public Action turn() {
 		if (me.turn == 1) {
 			getFMap();
