@@ -1,7 +1,6 @@
 package bc19;
 
 import bc19.*;
-import oscarMakesAMess.MapSpot;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -21,13 +20,17 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] encodedCastleLocs = new int[3];
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int encodedLocError; // Only for use by castles in first few turns
-
+	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
+					// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
+					// separately; don't worry 'bout it.
+	
 	public Action turn() {
 		if(me.turn == 1)
 		{
 			getFMap();
 			hRefl = getReflDir();
-
+			setXorKey();
+			
 			/*		if(hRefl) // Testing hRefl and fullMap
 			{
 				log("hor");
@@ -101,12 +104,12 @@ public class MyRobot extends BCAbstractRobot {
 
 		else if(me.turn == 3)
 		{
-			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
+			castleTalk(encodedLocError ^ (xorKey % 256)); // Only 2 bits so feel free to add more info and also quite unimportant overall
 		}
 
 		else if(me.turn == 4)
 		{
-			castleTalk(encodedLocError); // Only 2 bits so feel free to add more info and also quite unimportant overall
+			castleTalk(encodedLocError ^ (xorKey % 256)); // Only 2 bits so feel free to add more info and also quite unimportant overall
 
 			for (int i = 1; i < numCastles; i++)
 			{
@@ -142,13 +145,14 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			getAllCastleLocs();
 			getEnemyCastleLocs();
+			
 			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
 				str += "{";
 				for(int j = 0; j < 2; j++)
 				{
-					str += plainCastleLocs[i][j] + ", ";
+					str += enemyCastleLocs[i][j] + ", ";
 				}
 				str = str.substring(0, str.length() - 2) + "}, ";
 			}
@@ -250,6 +254,17 @@ public class MyRobot extends BCAbstractRobot {
 		return true; // If it gets here, it's reflected both ways.
 	}
 
+	private void setXorKey()
+	{
+		int[] parts = new int[4];
+		parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
+		parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
+		parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
+		parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
+		
+		xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
+	}
+	
 	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
 	{
 		int[] plain; // 0 is location on your half of map; 1 is how far across
@@ -299,6 +314,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		plainCastleLocs[0] = new int[] {me.x, me.y};
 		encodedCastleLocs[0] = encoded[0] * 8 + encoded[1];
+		encodedCastleLocs[0] ^= (xorKey % 256);
 		castleTalk(encodedCastleLocs[0]);
 	}
 
@@ -306,15 +322,15 @@ public class MyRobot extends BCAbstractRobot {
 	{									// index of plainCastleLocs.
 		int[] plain = new int[2];
 
-		plain[0] = (int) Math.floor(encodedCastleLocs[i] / 8) * 2;
+		plain[0] = (int) Math.floor(((xorKey % 256) ^ encodedCastleLocs[i]) / 8) * 2;
 
 		if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
 		{
-			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + 3;
+			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + 3;
 		}
 		else
 		{
-			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
+			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
 		}
 
 
@@ -331,6 +347,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of other castles
 	{
+		adjustment ^= xorKey % 256; 
+		
 		if(hRefl)
 		{
 			plainCastleLocs[i][1] += adjustment % 2;
@@ -352,7 +370,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else if(numCastles == 3)
 		{
-			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
+			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[2], r2);
 		}
 		else if(numCastles != 1)
 		{
