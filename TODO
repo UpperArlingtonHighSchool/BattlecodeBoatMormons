@@ -1,12 +1,18 @@
-- Write crusader rush code
+- Write crusader/preacher rush code
 
-- Defend against crusader rush code
-
-- Method for determining church placement; develop proletariat
-	- if within 9 pilgrim movements of a mine, have 2 pilgrims running back and forth
+- Defend against crusader/preacher rush code
 
 - Strategy development
 	- develop and over-arching strategy
-	- run out of time for micro
+	
+- Defend mines
+
+- Fix ID part of attack functions
+
+- Test preacherAttack
+
+- Micro for units to spread out so that preachers can't attack multiple
+	
+- findBestMineCluster
 	
 - unimportant: Update function to get reflection direction for edge case that devs will prob. make where map is symmetric both ways except castles
