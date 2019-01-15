@@ -32,10 +32,10 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		if (turn == 1)
 		{
-			//  			getFMap();
+			getFMap();
 			for(int i = -1; i<=1; i++){
-				for(int j = -1; j<=1;j++){
-					//				if(fullMap[i][j] == PASSABLE)
+				for(int j = -1; j<=1; j++){
+					if(fullMap[me.y + i][me.x + j] == PASSABLE)
 					{
 						buildUnit(3, i, j);
 						System.out.println("built unit 3 at "+i+", "+j);
