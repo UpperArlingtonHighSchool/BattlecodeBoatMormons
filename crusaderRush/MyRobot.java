@@ -12,6 +12,7 @@ public class MyRobot extends BCAbstractRobot {
 	private final int FUEL = 2;
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 1, 2}; // 0: Castle, 1: Church, 2: Pilgrim, 3: Crusader, 4: Prophet,
 	private boolean hRefl; // true iff reflected horizontally				 5: Preacher. Feel free to mess with order in your robots.
+	private boolean startLowLoc;
 	private int[][] robotMap;
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
 	private int numCastles;
@@ -23,7 +24,6 @@ public class MyRobot extends BCAbstractRobot {
 	private boolean attack;
 
 	public Action turn() {
-		log("okay let's just start here");
 		if(me.turn == 1)
 		{
 			getFMap();
@@ -98,6 +98,7 @@ public class MyRobot extends BCAbstractRobot {
 		else if(me.turn == 6)
 		{
 			sendCastleLocs(5);
+			signal(0, 0);
 		}
 
 		if(me.turn > 1 && me.turn < 7)
@@ -144,12 +145,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action crusader()
 	{
-		log("please");
-		
 		if(me.turn == 1)
 		{
-			log("in here");
-			
 			attack = false;
 
 			for(Robot rob : getVisibleRobots())
@@ -160,18 +157,16 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-			log("yup still");
-			
 			if(hRefl)
 			{
 				if(me.x < fullMap.length / 2)
 				{
-					log("ummm1");
+					startLowLoc = true;
 					return move(1, 0);
 				}
 				else
 				{
-					log("ummm2");
+					startLowLoc = false;
 					return move(-1, 0);
 				}
 			}
@@ -179,21 +174,20 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				if(me.y < fullMap.length / 2)
 				{
+					startLowLoc = true;
 					return move(0, 1);
-
 				}
 				else
 				{
+					startLowLoc = false;
 					return move(0, -1);
 				}
 			}
 		}
 
-		log("done moov");
-		
-		if(!attack && isRadioing(getRobot(castleIDs[0])))
+		if(!attack)
 		{
-			log("get brod kast");
+			if(getVisibleRobots().length == 6)
 			{
 				getAllCastleLocs();
 				getEnemyCastleLocs();
@@ -201,37 +195,39 @@ public class MyRobot extends BCAbstractRobot {
 				attack = true;
 			}
 		}
-		else
+		
+		log("here");
+
+		if(attack)
 		{
 			AttackAction atk = autoAttack();
 			if(atk == null)
 			{
-				log("no attacc");
 				if(hRefl)
 				{
-					if(me.x < fullMap.length / 2)
+					if(startLowLoc)
 					{
-						return(move(2, 0));
+						return move(2, 0);
 					}
 					else
 					{
-						return(move(-2, 0));
+						return move(-2, 0);
 					}
 				}
 				else
 				{
-					if(me.y < fullMap.length / 2)
+					if(startLowLoc)
 					{
-						return(move(0, 2));
+						return move(0, 2);
 					}
 					else
 					{
-						return(move(0, -2));
-					}				}
+						return move(0, -2);
+					}
+				}
 			}
 			else
 			{
-				log("ATTTACAACACKCKKKAKA");
 				return atk;
 			}
 		}
@@ -491,29 +487,31 @@ public class MyRobot extends BCAbstractRobot {
 
 	private AttackAction autoAttack() // NOT TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
 	{
+		
 		Robot[] robs = getVisibleRobots();
 		ArrayList<Robot> priorRobs = new ArrayList<Robot>(); // only robots of highest priority type
 		int minRange, range;
-		if(me.id == 3 || me.id == 5)
+		if(me.unit == 3)
 		{
 			minRange = 1;
 			range = 16;
 		}
-		else if(me.id == 4)
+		else if(me.unit == 4)
 		{
 			minRange = 16;
 			range = 64;
 		}
 		else
 		{
-			log("you're trying to attack with a non-combat robot and autoAttack() is gonna return an error");
+			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is gonna return an error");
 			minRange = 0;
 			range = 0;
 		}
 
+		
 		boolean found = false;
 		int i = 0;
-		while(!found) // make priorRobs
+		while(!found && i < 6) // make priorRobs
 		{
 			for(Robot rob : robs)
 			{
@@ -526,10 +524,10 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			i++;
 		}
-
+		
 		if(priorRobs.size() == 1)
 		{
-			return(attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y));
+			return attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y);
 		}
 		else if(priorRobs.size() == 0)
 		{
