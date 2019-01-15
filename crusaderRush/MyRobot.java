@@ -524,7 +524,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		if(priorRobs.size() == 1)
-		{
+		{			
 			return attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y);
 		}
 		else if(priorRobs.size() == 0)
@@ -533,11 +533,11 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 
+		String str = "";
 		int lowestID = 4097;
-		for(int j = 0; j < priorRobs.size(); j++)
-		{
-			if(priorRobs.get(j).id < lowestID)
-			{
+		for (int j = 0; j < priorRobs.size(); j++) {
+			str += priorRobs.get(j).id + " ";
+			if (priorRobs.get(j).id < lowestID) {
 				lowestID = priorRobs.get(j).id;
 			}
 		}
