@@ -137,6 +137,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			getEnemyCastleLocs();
 		}
+		
+		return null; //default
 	}
 
 	private Action church() {
