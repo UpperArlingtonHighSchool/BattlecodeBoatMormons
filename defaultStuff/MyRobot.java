@@ -410,42 +410,75 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private AttackAction autoAttack() // NOT TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
+	private Robot[] getEnemiesInRange()
 	{
 		Robot[] robs = getVisibleRobots();
-		ArrayList<Robot> priorRobs = new ArrayList<Robot>(); // only robots of highest priority type
+		ArrayList<Robot> enms = new ArrayList<Robot>();
+
 		int minRange, range;
-		if(me.id == 3 || me.id == 5)
+		if(me.unit == 3)
 		{
 			minRange = 1;
 			range = 16;
 		}
-		else if(me.id == 4)
+		else if(me.unit == 4)
 		{
 			minRange = 16;
 			range = 64;
 		}
 		else
 		{
-			log("you're trying to attack with a non-combat robot and autoAttack() is gonna return an error");
+			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is not gonna work");
 			minRange = 0;
 			range = 0;
 		}
+		
+		for(Robot rob : robs)
+		{
+			if(rob.team != me.team && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * 
+					(rob.y - me.y) <= range && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) >= minRange)
+			{
+				enms.add(rob);
+			}
+		}
 
+		return enms.toArray(new Robot[enms.size()]);
+	}
+
+	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
+	{
+		Robot[] robs = getEnemiesInRange();
+		
+		if(robs.length == 0)
+		{
+			return null;
+		}
+		
+		ArrayList<Robot> priorRobs = new ArrayList<Robot>(); // only robots of highest priority type
 		boolean found = false;
 		int i = 0;
-		while(!found) // make priorRobs
+
+		while(!found && i < 6) // make priorRobs
 		{
 			for(Robot rob : robs)
 			{
-				if(rob.team != me.team && rob.unit == attackPriority[i] && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * 
-						(rob.y - me.y) <= range && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) >= minRange)
+				if(rob.unit == attackPriority[i])
 				{
 					found = true;
 					priorRobs.add(rob);
 				}
 			}
 			i++;
+		}
+
+		if(priorRobs.size() == 1)
+		{
+			return attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y);
+		}
+		else if(priorRobs.size() == 0)
+		{
+			log("why are there no enemies and yet autoAttack() has gotten all the way here");
+			return null;
 		}
 
 		int lowestID = 4097;

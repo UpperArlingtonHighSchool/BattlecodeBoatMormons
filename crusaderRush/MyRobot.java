@@ -195,36 +195,13 @@ public class MyRobot extends BCAbstractRobot {
 				attack = true;
 			}
 		}
-		
-		log("here");
 
 		if(attack)
 		{
 			AttackAction atk = autoAttack();
 			if(atk == null)
 			{
-				if(hRefl)
-				{
-					if(startLowLoc)
-					{
-						return move(2, 0);
-					}
-					else
-					{
-						return move(-2, 0);
-					}
-				}
-				else
-				{
-					if(startLowLoc)
-					{
-						return move(0, 2);
-					}
-					else
-					{
-						return move(0, -2);
-					}
-				}
+				return tryMove(enemyCastleLocs[0][0], enemyCastleLocs[0][1]);
 			}
 			else
 			{
@@ -485,11 +462,11 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private AttackAction autoAttack() // NOT TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
+	private Robot[] getEnemiesInRange()
 	{
-		
 		Robot[] robs = getVisibleRobots();
-		ArrayList<Robot> priorRobs = new ArrayList<Robot>(); // only robots of highest priority type
+		ArrayList<Robot> enms = new ArrayList<Robot>();
+
 		int minRange, range;
 		if(me.unit == 3)
 		{
@@ -503,20 +480,41 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else
 		{
-			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is gonna return an error");
+			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is not gonna work");
 			minRange = 0;
 			range = 0;
 		}
-
 		
+		for(Robot rob : robs)
+		{
+			if(rob.team != me.team && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * 
+					(rob.y - me.y) <= range && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) >= minRange)
+			{
+				enms.add(rob);
+			}
+		}
+
+		return enms.toArray(new Robot[enms.size()]);
+	}
+
+	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
+	{
+		Robot[] robs = getEnemiesInRange();
+		
+		if(robs.length == 0)
+		{
+			return null;
+		}
+		
+		ArrayList<Robot> priorRobs = new ArrayList<Robot>(); // only robots of highest priority type
 		boolean found = false;
 		int i = 0;
+
 		while(!found && i < 6) // make priorRobs
 		{
 			for(Robot rob : robs)
 			{
-				if(rob.team != me.team && rob.unit == attackPriority[i] && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * 
-						(rob.y - me.y) <= range && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) >= minRange)
+				if(rob.unit == attackPriority[i])
 				{
 					found = true;
 					priorRobs.add(rob);
@@ -524,13 +522,14 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			i++;
 		}
-		
+
 		if(priorRobs.size() == 1)
 		{
 			return attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y);
 		}
 		else if(priorRobs.size() == 0)
 		{
+			log("why are there no enemies and yet autoAttack() has gotten all the way here");
 			return null;
 		}
 
@@ -546,109 +545,45 @@ public class MyRobot extends BCAbstractRobot {
 		return attack(getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y);
 	}
 
-	// WHY ARE THESE SO SLOW
-	private ArrayList<int[]> bfs(int goalX, int goalY) {
-		log("goal is (" + goalX + ", " + goalY + ")");
-		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
-		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		LinkedList<MapSpot> spots = new LinkedList<>();
-		MapSpot spot = new MapSpot(null, me.x, me.y, 0, 0);
-		main: while (spot.x != goalX || spot.y != goalY) {
-			int left = Math.max(0, spot.x - maxRadius);
-			int top = Math.max(0, spot.y - maxRadius);
-			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
-			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
-			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
-			MapSpot closestPoint = null;
-			for (int x = left; x <= right; x++) {
-				int dx = x - spot.x;
-				looping: for (int y = top; y <= bottom; y++) {
-					int dy = y - spot.y;
-					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
-							&& robotMap[y][x] <= 0) {
-						MapSpot newSpot = new MapSpot(spot, x, y, 0, 0);
-						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
-							closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
-							closestPoint = newSpot;
-							continue looping;
-						}
-						for (MapSpot inThere : spots) {
-							if (inThere.equals(newSpot)) {
-								continue looping;
-							}
-						}
-						spots.add(newSpot);
-					}
+	private MoveAction tryMove(int goalX, int goalY) {
+		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		int[][] moves;
+		int index = 0;
+		if (radius == 2) {
+			moves = new int[12][3];
+		} else if (radius == 3) {
+			moves = new int[28][3];
+		} else {
+			log("uh oh they updated the specs, fix tryOrder");
+		}
+		for (int dx = -radius; dx <= radius; dx++) {
+			int newX = me.x + dx;
+			if (newX <= -1 || newX >= fullMap[0].length) {
+				continue;
+			}
+			for (int dy = -radius; dy <= radius; dy++) {
+				int newY = me.y + dy;
+				if (newY <= -1 || newY >= fullMap.length || dx * dx + dy * dy > radius * radius
+						|| (dx * dx + dy * dy) * (SPECS.UNITS[me.unit].FUEL_PER_MOVE) > fuel
+						|| fullMap[newY][newX] == IMPASSABLE || robotMap[newY][newX] > 0) {
+					continue;
 				}
-			}
-			if (closestPoint != null) {
-				spot = closestPoint;
-				break main;
-			}
-			spot = spots.poll();
-			if (spot == null) {
-				return null;
+				moves[index++] = new int[] { dx, dy,
+						(goalX - newX) * (goalX - newX) + (goalY - newY) * (goalY - newY) };
 			}
 		}
-		ArrayList<int[]> ans = new ArrayList<>();
-		while (spot.parent != null) {
-			ans.add(0, new int[] { spot.x, spot.y });
-			spot = spot.parent;
+		if (index == 0) {
+			return null;
 		}
-		return ans;
-	}
+		int min = fullMap.length * fullMap.length + 1;
+		int minIndex;
+		for (int i = 0; i < index; i++) {
+			if (moves[i][2] < min) {
+				min = moves[i][2];
+				minIndex = i;
+			}
+		}
 
-	// right now, BFS works better. it shouldn't seem the way that it be, but it do. fix it if you dare...
-	private ArrayList<int[]> aStar(int goalX, int goalY) {
-		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
-		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		ArrayList<MapSpot> spots = new ArrayList<>();
-		MapSpot spot = new MapSpot(null, me.x, me.y, 0, (Math.abs(goalX - me.x) + Math.abs(goalY - me.y)) * fuelCost);
-		main: while (spot.x != goalX || spot.y != goalY) {
-			int left = Math.max(0, spot.x - maxRadius);
-			int top = Math.max(0, spot.y - maxRadius);
-			int right = Math.min(fullMap[0].length - 1, spot.x + maxRadius);
-			int bottom = Math.min(fullMap.length - 1, spot.y + maxRadius);
-			for (int x = left; x <= right; x++) {
-				int dx = x - spot.x;
-				looping: for (int y = top; y <= bottom; y++) {
-					int dy = y - spot.y;
-					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
-							&& robotMap[y][x] <= 0) {
-						MapSpot toAdd = new MapSpot(spot, x, y, spot.traveled + (dx * dx + dy * dy) * fuelCost,
-								(Math.abs(goalX - x) + Math.abs(goalY - y)) * fuelCost);
-						if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < (goalX - me.x) * (goalX - me.x)
-								+ (goalY - me.y) * (goalY - me.y)) {
-							spot = toAdd;
-							break main;
-						}
-						for (int i = 0; i < spots.size(); i++) {
-							if (toAdd.compareTo(spots.get(i)) < 0) {
-								spots.add(i, toAdd);
-								for (int j = i + 1; j < spots.size(); j++) {
-									if (spots.get(j).equals(toAdd)) {
-										spots.remove(j);
-										continue looping;
-									}
-								}
-								continue looping;
-							} else if (toAdd.equals(spots.get(i))) {
-								continue looping;
-							}
-						}
-						spots.add(toAdd);
-					}
-				}
-			}
-			spot = spots.get(0);
-			spots.remove(0);
-		}
-		ArrayList<int[]> ans = new ArrayList<>();
-		while (spot.parent != null) {
-			ans.add(new int[] { spot.x, spot.y });
-			spot = spot.parent;
-		}
-		return ans;
+		return move(moves[minIndex][0], moves[minIndex][1]);
 	}
-
 }
