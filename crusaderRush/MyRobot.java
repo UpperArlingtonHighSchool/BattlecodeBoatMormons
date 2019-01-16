@@ -10,9 +10,12 @@ public class MyRobot extends BCAbstractRobot {
 	private final int PASSABLE = 0;
 	private final int KARBONITE = 1;
 	private final int FUEL = 2;
-	private final int[] attackPriority = new int[] {4, 5, 3, 0, 1, 2}; // 0: Castle, 1: Church, 2: Pilgrim, 3: Crusader, 4: Prophet,
-	private boolean hRefl; // true iff reflected horizontally				 5: Preacher. Feel free to mess with order in your robots.
-	private boolean startLowLoc;
+	private final int[] attackPriority = new int[] { 4, 5, 3, 0, 1, 2 }; // 0: Castle, 1: Church, 2: Pilgrim, 3:
+	// Crusader, 4: Prophet,
+	private boolean hRefl; // true iff reflected horizontally 5: Preacher. Feel free to mess with order in
+	// your robots.
+	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
+	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
 	private int[][] robotMap;
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
 	private int numCastles;
@@ -21,22 +24,63 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] encodedCastleLocs = new int[3];
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int encodedLocError; // Only for use by castles in first few turns
+	private final int[][] adjacentSpaces = new int[][] { //Matrix of adjacent spaces, relative to the Robot
+		new int[] {0,1},
+		new int[] {-1,1},
+		new int[] {-1,0},
+		new int[] {-1,-1},
+		new int[] {0,-1},
+		new int[] {1,-1},
+		new int[] {1,0},
+		new int[] {1,1}
+	}; 
+	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
+	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
+	// separately; don't worry 'bout it.
 	private boolean attack;
+	private int targetCastle;
 
 	public Action turn() {
-		if(me.turn == 1)
-		{
+		if (me.turn == 1) {
 			getFMap();
 			hRefl = getReflDir();
+
+			setXorKey();
+
+			/*		if(hRefl) // Testing hRefl and fullMap
+			{
+				log("hor");
+			}
+			else
+			{
+				log("vert");
+			}
+
+			String boop;
+			for(int[] r : fullMap)
+			{
+				boop = "";
+				for(int c : r)
+				{
+					boop += c + " ";
+				}
+				log(boop);
+			}*/
 		}
 		robotMap = getVisibleRobotMap();
 		switch (me.unit) {
-		case 0: return castle();
-		case 1: return church();
-		case 2: return pilgrim();
-		case 3: return crusader();
-		case 4: return prophet();
-		case 5: return preacher();
+		case 0:
+			return castle();
+		case 1:
+			return church();
+		case 2:
+			return pilgrim();
+		case 3:
+			return crusader();
+		case 4:
+			return prophet();
+		case 5:
+			return preacher();
 		}
 		return null;
 	}
@@ -95,34 +139,25 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 		}
 
-		else if(me.turn == 6)
+		if(me.turn > 1 && me.turn < 2 + 5 / numCastles)
 		{
-			sendCastleLocs(5);
-			signal(0, 0);
-		}
+			sendCastleLocs(1);
 
-		if(me.turn > 1 && me.turn < 7)
-		{
 			if(hRefl)
 			{
-				if(me.x < fullMap.length / 2)
-				{
-					return buildUnit(SPECS.CRUSADER, 1, me.turn % 3 - 1);
-				}
-				else
-				{
-					return buildUnit(SPECS.CRUSADER, -1, me.turn % 3 - 1);
-				}
+
+				return buildUnit(SPECS.CRUSADER, (me.x < fullMap.length / 2) ? 1 : -1, 0);
+
 			}
 			else
 			{
 				if(me.y < fullMap.length / 2)
 				{
-					return buildUnit(SPECS.CRUSADER, me.turn % 3 - 1, 1);
+					return buildUnit(SPECS.CRUSADER, 0, 1);
 				}
 				else
 				{
-					return buildUnit(SPECS.CRUSADER, me.turn % 3 - 1, -1);
+					return buildUnit(SPECS.CRUSADER, 0, -1);
 				}
 			}
 		}
@@ -157,43 +192,56 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-			if(hRefl)
+			getAllCastleLocs();
+			getEnemyCastleLocs();
+
+			if(numCastles == 1)
 			{
-				if(me.x < fullMap.length / 2)
+				targetCastle = 0;
+			}
+			else if(numCastles == 2)
+			{
+				if(fullMap[17][22] == 0)
 				{
-					startLowLoc = true;
-					return move(1, 0);
+					targetCastle = 0;
 				}
 				else
 				{
-					startLowLoc = false;
-					return move(-1, 0);
+					targetCastle = 1;
 				}
+			}
+			else if(numCastles == 3)
+			{
+
+				int minInd, maxInd;
+				int min = 64;
+				int max = -1;
+
+				for(int i = 0; i < 3; i++)
+				{
+					if(enemyCastleLocs[i][hRefl ? 1 : 0] < min)
+					{
+						minInd = i;
+						min = enemyCastleLocs[i][hRefl ? 1 : 0];
+					}
+					if(enemyCastleLocs[i][hRefl ? 1 : 0] > max)
+					{
+						maxInd = i;
+						max = enemyCastleLocs[i][hRefl ? 1 : 0];
+					}
+				}
+
+				enemyCastleLocs = new int[][] {enemyCastleLocs[minInd], enemyCastleLocs[3 - minInd - maxInd], enemyCastleLocs[maxInd]};
 			}
 			else
 			{
-				if(me.y < fullMap.length / 2)
-				{
-					startLowLoc = true;
-					return move(0, 1);
-				}
-				else
-				{
-					startLowLoc = false;
-					return move(0, -1);
-				}
+				log("uh oh crusader numCastles is " + numCastles);
 			}
 		}
 
 		if(!attack)
 		{
-			if(getVisibleRobots().length == 6)
-			{
-				getAllCastleLocs();
-				getEnemyCastleLocs();
-
-				attack = true;
-			}
+			attack = getVisibleRobots().length == 6;
 		}
 
 		if(attack)
@@ -201,7 +249,7 @@ public class MyRobot extends BCAbstractRobot {
 			AttackAction atk = autoAttack();
 			if(atk == null)
 			{
-				return tryMove(enemyCastleLocs[0][0], enemyCastleLocs[0][1]);
+				return null;//tryMove(enemyCastleLocs[0][0], enemyCastleLocs[0][1]);
 			}
 			else
 			{
@@ -212,18 +260,13 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-
-	private Action prophet()
-	{
+	private Action prophet() {
 		return null;
 	}
 
-
-	private Action preacher()
-	{
+	private Action preacher() {
 		return null;
 	}
-
 
 	private void getFMap() // makes fullMap
 	{
@@ -236,24 +279,15 @@ public class MyRobot extends BCAbstractRobot {
 		int h = m.length;
 		int w = h;
 
-		for(int i = 0; i < h; i++)
-		{
-			for(int j = 0; j < w; j++)
-			{
-				if(!m[i][j])
-				{
+		for (int i = 0; i < h; i++) {
+			for (int j = 0; j < w; j++) {
+				if (!m[i][j]) {
 					fullMap[i][j] = IMPASSABLE;
-				}
-				else if(k[i][j])
-				{
+				} else if (k[i][j]) {
 					fullMap[i][j] = KARBONITE;
-				}
-				else if(f[i][j])
-				{
+				} else if (f[i][j]) {
 					fullMap[i][j] = FUEL;
-				}
-				else
-				{
+				} else {
 					fullMap[i][j] = PASSABLE;
 				}
 			}
@@ -265,37 +299,106 @@ public class MyRobot extends BCAbstractRobot {
 		int top = (fullMap.length + 1) / 2;
 		int left = (fullMap[0].length + 1) / 2;
 
-		for(int i = 0; i < top; i++)	// Goes through top left quarter of map and tests one cell at a time
-		{								// for whether it's reflected horizontally then vertically.
-			for(int j = 0; j < left; j++) // If a discrepancy is found, method returns.
+		for (int i = 0; i < top; i++) // Goes through top left quarter of map and tests one cell at a time
+		{ // for whether it's reflected horizontally then vertically.
+			for (int j = 0; j < left; j++) // If a discrepancy is found, method returns.
 			{
-				if(fullMap[i][j] != fullMap[fullMap.length - 1 - i][j])
-				{
+				if (fullMap[i][j] != fullMap[fullMap.length - 1 - i][j]) {
 					return true;
-				}
-				else if(fullMap[i][j] != fullMap[i][fullMap[0].length - 1 - j])
-				{
+				} else if (fullMap[i][j] != fullMap[i][fullMap[0].length - 1 - j]) {
 					return false;
 				}
 			}
 		}
 
-		for(int i = fullMap.length; i > top; i--) // Checks bottom right quarter same way just in case no return yet.
+		for (int i = fullMap.length; i > top; i--) // Checks bottom right quarter same way just in case no return yet.
 		{
-			for(int j = fullMap[0].length; j > left; j--)
-			{
-				if(fullMap[i][j] != fullMap[fullMap.length - 1 - i][j])
-				{
+			for (int j = fullMap[0].length; j > left; j--) {
+				if (fullMap[i][j] != fullMap[fullMap.length - 1 - i][j]) {
 					return true;
-				}
-				else if(fullMap[i][j] != fullMap[i][fullMap[0].length - 1 - j])
-				{
+				} else if (fullMap[i][j] != fullMap[i][fullMap[0].length - 1 - j]) {
 					return false;
 				}
 			}
 		}
 
 		return true; // If it gets here, it's reflected both ways.
+	}
+
+	private int[] findClosestKarbo() {
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans;
+		for (int x = 0; x < fullMap[0].length; x++) {
+			looping: for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == KARBONITE) {
+					int[] temp = new int[] { x, y };
+					for (int[] out : karbosInUse) {
+						if (out[0] == temp[0] && out[1] == temp[1]) {
+							if (robotMap[y][x] == 0) {
+								karbosInUse.remove(out);
+							} else {
+								continue looping;
+							}
+						}
+					}
+					if (robotMap[y][x] > 0) {
+						karbosInUse.add(temp);
+						continue looping;
+					}
+					int dx = x - me.x;
+					int dy = y - me.y;
+					if (dx * dx + dy * dy < minDistance) {
+						ans = temp;
+						minDistance = dx * dx + dy * dy;
+					}
+				}
+			}
+		}
+		return ans;
+	}
+
+
+	private int[] findClosestFuel() {
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans = new int[] { 0, 0 };
+		for (int x = 0; x < fullMap[0].length; x++) {
+			looping: for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == KARBONITE) {
+					int[] temp = new int[] { x, y };
+					for (int[] out : fuelsInUse) {
+						if (out[0] == temp[0] && out[1] == temp[1]) {
+							if (robotMap[y][x] == 0) {
+								fuelsInUse.remove(out);
+							} else {
+								continue looping;
+							}
+						}
+					}
+					if (robotMap[y][x] > 0) {
+						fuelsInUse.add(temp);
+						continue looping;
+					}
+					int dx = x - me.x;
+					int dy = y - me.y;
+					if (dx * dx + dy * dy < minDistance) {
+						ans = temp;
+						minDistance = dx * dx + dy * dy;
+					}
+				}
+			}
+		}
+		return ans;
+	}
+
+	private void setXorKey()
+	{
+		int[] parts = new int[4];
+		parts[0] = 5 + fullMap[9][30] + fullMap[18][8] + fullMap[9][0] + fullMap[23][28] + fullMap[15][31];
+		parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
+		parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
+		parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
+
+		xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
 	}
 
 	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
@@ -347,6 +450,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		plainCastleLocs[0] = new int[] {me.x, me.y};
 		encodedCastleLocs[0] = encoded[0] * 8 + encoded[1];
+		encodedCastleLocs[0] ^= (xorKey % 256);
 		castleTalk(encodedCastleLocs[0]);
 	}
 
@@ -354,15 +458,15 @@ public class MyRobot extends BCAbstractRobot {
 	{									// index of plainCastleLocs.
 		int[] plain = new int[2];
 
-		plain[0] = (int) Math.floor(encodedCastleLocs[i] / 8) * 2;
+		plain[0] = (int) Math.floor(((xorKey % 256) ^ encodedCastleLocs[i]) / 8) * 2;
 
 		if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
 		{
-			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + 3;
+			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + 3;
 		}
 		else
 		{
-			plain[1] = ((int) Math.floor(encodedCastleLocs[i] % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
+			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
 		}
 
 
@@ -379,6 +483,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of other castles
 	{
+		adjustment ^= xorKey % 256; 
+
 		if(hRefl)
 		{
 			plainCastleLocs[i][1] += adjustment % 2;
@@ -400,7 +506,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else if(numCastles == 3)
 		{
-			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[0], r2);
+			signal(encodedCastleLocs[1] * 256 + encodedCastleLocs[2], r2);
 		}
 		else if(numCastles != 1)
 		{
@@ -414,14 +520,12 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(rob.unit == SPECS.CASTLE)
 			{
-				castleIDs[0] = rob.id;
-
 				plainCastleLocs[0] = new int[] {rob.x, rob.y};
 
 				if(isRadioing(rob))
 				{
 					encodedCastleLocs[1] = (int) Math.floor(rob.signal / 256);
-					encodedCastleLocs[2] = rob.signal % 256;
+					encodedCastleLocs[2] = (int) Math.floor(rob.signal % 256);
 
 					if(encodedCastleLocs[1] == encodedCastleLocs[2])
 					{
@@ -439,8 +543,6 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					numCastles = 1;
 				}
-
-				break;
 			}
 		}
 	}
@@ -462,34 +564,26 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private Robot[] getEnemiesInRange()
-	{
+	private Robot[] getEnemiesInRange() {
 		Robot[] robs = getVisibleRobots();
 		ArrayList<Robot> enms = new ArrayList<Robot>();
 
 		int minRange, range;
-		if(me.unit == 3)
-		{
+		if (me.unit == 3) {
 			minRange = 1;
 			range = 16;
-		}
-		else if(me.unit == 4)
-		{
+		} else if (me.unit == 4) {
 			minRange = 16;
 			range = 64;
-		}
-		else
-		{
+		} else {
 			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is not gonna work");
 			minRange = 0;
 			range = 0;
 		}
-		
-		for(Robot rob : robs)
-		{
-			if(rob.team != me.team && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * 
-					(rob.y - me.y) <= range && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) >= minRange)
-			{
+
+		for (Robot rob : robs) {
+			if (rob.team != me.team && (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) <= range
+					&& (rob.x - me.x) * (rob.x - me.x) + (rob.y - me.y) * (rob.y - me.y) >= minRange) {
 				enms.add(rob);
 			}
 		}
@@ -497,25 +591,23 @@ public class MyRobot extends BCAbstractRobot {
 		return enms.toArray(new Robot[enms.size()]);
 	}
 
-	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in attackPriority, of lowest ID
+	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in
+	// attackPriority, of lowest ID
 	{
 		Robot[] robs = getEnemiesInRange();
-		
-		if(robs.length == 0)
-		{
+
+		if (robs.length == 0) {
 			return null;
 		}
-		
+
 		ArrayList<Robot> priorRobs = new ArrayList<Robot>(); // only robots of highest priority type
 		boolean found = false;
 		int i = 0;
 
-		while(!found && i < 6) // make priorRobs
+		while (!found && i < 6) // make priorRobs
 		{
-			for(Robot rob : robs)
-			{
-				if(rob.unit == attackPriority[i])
-				{
+			for (Robot rob : robs) {
+				if (rob.unit == attackPriority[i]) {
 					found = true;
 					priorRobs.add(rob);
 				}
@@ -523,20 +615,15 @@ public class MyRobot extends BCAbstractRobot {
 			i++;
 		}
 
-		if(priorRobs.size() == 1)
-		{			
+		if (priorRobs.size() == 1) {
 			return attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y);
-		}
-		else if(priorRobs.size() == 0)
-		{
+		} else if (priorRobs.size() == 0) {
 			log("why are there no enemies and yet autoAttack() has gotten all the way here");
 			return null;
 		}
 
-		String str = "";
 		int lowestID = 4097;
 		for (int j = 0; j < priorRobs.size(); j++) {
-			str += priorRobs.get(j).id + " ";
 			if (priorRobs.get(j).id < lowestID) {
 				lowestID = priorRobs.get(j).id;
 			}
@@ -545,45 +632,247 @@ public class MyRobot extends BCAbstractRobot {
 		return attack(getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y);
 	}
 
-	private MoveAction tryMove(int goalX, int goalY) {
-		int radius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		int[][] moves;
-		int index = 0;
-		if (radius == 2) {
-			moves = new int[12][3];
-		} else if (radius == 3) {
-			moves = new int[28][3];
-		} else {
-			log("uh oh they updated the specs, fix tryOrder");
-		}
-		for (int dx = -radius; dx <= radius; dx++) {
-			int newX = me.x + dx;
-			if (newX <= -1 || newX >= fullMap[0].length) {
-				continue;
-			}
-			for (int dy = -radius; dy <= radius; dy++) {
-				int newY = me.y + dy;
-				if (newY <= -1 || newY >= fullMap.length || dx * dx + dy * dy > radius * radius
-						|| (dx * dx + dy * dy) * (SPECS.UNITS[me.unit].FUEL_PER_MOVE) > fuel
-						|| fullMap[newY][newX] == IMPASSABLE || robotMap[newY][newX] > 0) {
-					continue;
-				}
-				moves[index++] = new int[] { dx, dy,
-						(goalX - newX) * (goalX - newX) + (goalY - newY) * (goalY - newY) };
-			}
-		}
-		if (index == 0) {
-			return null;
-		}
-		int min = fullMap.length * fullMap.length + 1;
-		int minIndex;
-		for (int i = 0; i < index; i++) {
-			if (moves[i][2] < min) {
-				min = moves[i][2];
-				minIndex = i;
+	// For preacherAttack()
+	private Robot[] getPreacherKillableRobots() // Now returns only units with max health <= 20 in visibility range, but
+	// can be edited
+	{ // to also return damaged units or units 1 space outside visibility range
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> killable = new ArrayList<Robot>();
+
+		for (Robot rob : robs) {
+			if (rob.team != me.team && (rob.unit == SPECS.PILGRIM || rob.unit == SPECS.PROPHET)) {
+				killable.add(rob);
 			}
 		}
 
-		return move(moves[minIndex][0], moves[minIndex][1]);
+		return killable.toArray(new Robot[killable.size()]);
+	}
+
+	// For preacherAttack()
+	private Robot[] getAllies() // Now returns only visible allies, but preachers can damage non-visible allies
+	// :( plis update
+	{
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> allies = new ArrayList<Robot>();
+
+		for (Robot rob : robs) {
+			if (rob.team == me.team) {
+				allies.add(rob);
+			}
+		}
+
+		return allies.toArray(new Robot[allies.size()]);
+	}
+
+	// For preacherAttack()
+	private Robot[] getEnemyRobots() // Does not return from outside of visibility range :(
+	{
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> enemies = new ArrayList<Robot>();
+
+		for (Robot rob : robs) {
+			if (rob.team != me.team && (rob.unit == SPECS.CRUSADER || rob.unit == SPECS.PREACHER)) {
+				enemies.add(rob);
+			}
+		}
+
+		return enemies.toArray(new Robot[enemies.size()]);
+	}
+
+	// For preacherAttack()
+	private Robot[] getEnemyBuildings() // Does not return from outside of visibility range :(
+	{ // Do not combine with other preacherAttack() helper methods. Ask Zain for
+		// elaboration if wanted.
+		Robot[] robs = getVisibleRobots();
+		ArrayList<Robot> buildings = new ArrayList<Robot>();
+
+		for (Robot rob : robs) {
+			if (rob.team != me.team && (rob.unit == SPECS.CASTLE || rob.unit == SPECS.CHURCH)) {
+				buildings.add(rob);
+			}
+		}
+
+		return buildings.toArray(new Robot[buildings.size()]);
+	}
+
+	// For preacherAttack()
+	private boolean squareContainsRobot(Robot rob, int centerX, int centerY) // 3x3 square
+	{
+		if (rob.x + 1 >= centerX && rob.x - 1 <= centerX && rob.y + 1 >= centerY && rob.y - 1 <= centerY) {
+			return true;
+		}
+		return false;
+	}
+
+	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill
+	// enemies, then damage
+	{ // enemy combat units, then damage enemy buildings
+		Robot[] killable = getPreacherKillableRobots();
+		Robot[] allies = getAllies();
+
+		int[][] attackLocs = new int[9][9];
+		ArrayList<Integer[]> bestLocs = new ArrayList<Integer[]>();
+		bestLocs.add(new Integer[] { 0, 0, -1 }); // x, y, value
+
+		for (int y = 0; y < 9; y++) // Killable units
+		{
+			for (int x = 0; x < 9; x++) {
+				if (x == 3 && y > 2 && y < 6) {
+					x += 3;
+				}
+
+				attackLocs[y][x] = 0;
+
+				for (Robot ally : allies) {
+					if (squareContainsRobot(ally, x, y)) {
+						attackLocs[y][x] = -1;
+					}
+				}
+
+				if (attackLocs[y][x] == 0) {
+					for (Robot deathable : killable) {
+						if (squareContainsRobot(deathable, x, y)) {
+							attackLocs[y][x] += 1;
+						}
+					}
+				}
+
+				if (attackLocs[y][x] > bestLocs.get(0)[2]) {
+					bestLocs.clear();
+					bestLocs.add(new Integer[] { x, y, attackLocs[y][x] });
+				} else if (attackLocs[y][x] == bestLocs.get(0)[2]) {
+					bestLocs.add(new Integer[] { x, y, attackLocs[y][x] });
+				}
+			}
+		}
+		if (bestLocs.size() == 1) {
+			return attack(bestLocs.get(0)[0] - 4, bestLocs.get(0)[1] - 4);
+		}
+
+		Robot[] combat = getEnemyRobots(); // write this to return all crusaders and preachers
+		ArrayList<Integer[]> bestbestLocs = new ArrayList<Integer[]>();
+		bestLocs.add(new Integer[] { 0, 0, -1 }); // x, y, new value
+
+		for (Integer[] pos : bestLocs) // Tiebreakers based on most damage to other combat units
+		{
+			for (Robot rob : combat) {
+				if (squareContainsRobot(rob, pos[0], pos[1])) {
+					attackLocs[pos[1]][pos[0]] += 1;
+				}
+			}
+
+			if (attackLocs[pos[1]][pos[0]] > bestbestLocs.get(0)[2]) {
+				bestbestLocs.clear();
+				bestbestLocs.add(new Integer[] { pos[0], pos[1], attackLocs[pos[1]][pos[0]] });
+			} else if (attackLocs[pos[1]][pos[0]] == bestbestLocs.get(0)[2]) {
+				bestbestLocs.add(new Integer[] { pos[0], pos[1], attackLocs[pos[1]][pos[0]] });
+			}
+		}
+
+		if (bestbestLocs.size() == 1) {
+			return attack(bestbestLocs.get(0)[0] - 4, bestbestLocs.get(0)[1] - 4);
+		}
+
+		Robot[] build = getEnemyBuildings(); // write this to return all castles and churches
+		ArrayList<Integer[]> goodLocs = new ArrayList<Integer[]>();
+		bestLocs.add(new Integer[] { 0, 0, -1 }); // x, y, new value
+
+		for (Integer[] pos : bestbestLocs) // Tiebreakers based on most damage to other combat units
+		{
+			for (Robot rob : build) {
+				if (squareContainsRobot(rob, pos[0], pos[1])) {
+					attackLocs[pos[1]][pos[0]] += 1;
+				}
+			}
+
+			if (attackLocs[pos[1]][pos[0]] > goodLocs.get(0)[2]) {
+				goodLocs.clear();
+				goodLocs.add(new Integer[] { pos[0], pos[1], attackLocs[pos[1]][pos[0]] });
+			} else if (attackLocs[pos[1]][pos[0]] == goodLocs.get(0)[2]) {
+				goodLocs.add(new Integer[] { pos[0], pos[1], attackLocs[pos[1]][pos[0]] });
+			}
+		}
+
+		if (goodLocs.size() == 1) {
+			return attack(goodLocs.get(0)[0] - 4, goodLocs.get(0)[1] - 4);
+		}
+
+		int lowestID = 4097;
+		int[] finalBestLoc;
+		int[][] robMap = getVisibleRobotMap();
+
+		for (Integer[] loc : goodLocs) // Tiebreaks to attack single robot with lowest ID
+		{
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dy = -1; dy <= 1; dy++) {
+					int ID = robMap[loc[1] + dy][loc[0] + dx];
+
+					if (ID > 0 && ID < lowestID) {
+						lowestID = ID;
+						finalBestLoc = new int[] { loc[0] + dx, loc[1] + dy };
+					}
+				}
+			}
+		}
+
+		return attack(finalBestLoc[0] - 4, finalBestLoc[1] - 4);
+	}
+
+	// bfs is reaaaally fast now
+	private ArrayList<int[]> bfs(int goalX, int goalY) {
+		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		int[] from = new int[fullMap.length * fullMap.length];
+		for (int i = 0; i < from.length; i++) {
+			from[i] = -1;
+		}
+		LinkedList<int[]> spots = new LinkedList<>();
+		int[] spot = new int[] { me.x, me.y };
+		main: while (!(spot[0] == goalX && spot[1] == goalY)) {
+			int left = Math.max(0, spot[0] - maxRadius);
+			int top = Math.max(0, spot[1] - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
+			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
+			int[] closestPoint = null;
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot[0];
+				looping: for (int y = top; y <= bottom; y++) {
+					int dy = y - spot[1];
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
+						if (from[y * fullMap.length + x] != -1) {
+							continue looping;
+						}
+						int[] newSpot = new int[] { x, y };
+						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
+
+						/*
+						 * if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
+						 * closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y); closestPoint
+						 * = newSpot; continue looping; }
+						 */
+
+						spots.add(newSpot);
+					}
+				}
+			}
+
+			/*
+			 * if (closestPoint != null) { spot = closestPoint; break main; }
+			 */
+
+			spot = spots.poll();
+			if (spot == null) {
+				return null;
+			}
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (from[spot[1] * fullMap.length + spot[0]] != -1) {
+			ans.add(0, spot);
+			int prevSpot = from[spot[1] * fullMap.length + spot[0]];
+			spot = new int[] { prevSpot % fullMap.length, (int) (prevSpot / fullMap.length) };
+		}
+		return ans;
 	}
 }

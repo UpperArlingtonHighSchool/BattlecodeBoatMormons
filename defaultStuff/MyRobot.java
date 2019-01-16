@@ -144,7 +144,7 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 
-			String str  = "{"; // Testing that pilgrims know where all castles are 
+			/*String str  = "{"; // Testing that pilgrims know where all castles are 
 			for(int i = 0; i < numCastles; i++)
 			{
 				str += "{";
@@ -155,7 +155,7 @@ public class MyRobot extends BCAbstractRobot {
 				str = str.substring(0, str.length() - 2) + "}, ";
 			}
 			str = str.substring(0, str.length() - 2) + "}";
-			log(str);
+			log(str);*/
 		}
 		return null;
 	}
