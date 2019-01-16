@@ -400,8 +400,7 @@ public class MyRobot extends BCAbstractRobot {
 			int top = Math.max(0, spot[1] - maxRadius);
 			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
 			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
-			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
-			int[] closestPoint = null;
+
 			for (int x = left; x <= right; x++) {
 				int dx = x - spot[0];
 				looping: for (int y = top; y <= bottom; y++) {
