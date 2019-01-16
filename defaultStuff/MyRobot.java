@@ -131,7 +131,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			getEnemyCastleLocs();
 		}
-		
+
 		return null; //default
 	}
 
@@ -302,10 +302,10 @@ public class MyRobot extends BCAbstractRobot {
 		parts[1] = 5 + fullMap[19][3] + fullMap[31][8] + fullMap[10][26] + fullMap[11][11] + fullMap[4][2];
 		parts[2] = 5 + fullMap[6][9] + fullMap[4][20] + fullMap[13][3] + fullMap[18][29] + fullMap[19][12];
 		parts[3] = 5 + fullMap[30][10] + fullMap[31][31] + fullMap[0][0] + fullMap[5][15] + fullMap[1][8];
-		
+
 		xorKey = parts[3] * 4096 + parts[2] * 256 + parts[1] * 16 + parts[0];
 	}
-	
+
 	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
 	{
 		int[] plain; // 0 is location on your half of map; 1 is how far across
@@ -389,7 +389,7 @@ public class MyRobot extends BCAbstractRobot {
 	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of other castles
 	{
 		adjustment ^= xorKey % 256; 
-		
+
 		if(hRefl)
 		{
 			plainCastleLocs[i][1] += adjustment % 2;
@@ -725,50 +725,61 @@ public class MyRobot extends BCAbstractRobot {
 
 	// bfs is reaaaally fast now
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
+		boolean occupied = false;
+		if (robotMap[goalY][goalX] > 0) {
+			occupied = true;
+		}
 		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		int[] from = new int[fullMap.length * fullMap.length];
+		LinkedList<int[]> spots = new LinkedList<>();
+		int[] spot = new int[] { me.x, me.y };
+		int[] from = new int[fullMap.length * fullMap[0].length];
 		for (int i = 0; i < from.length; i++) {
 			from[i] = -1;
 		}
-		LinkedList<int[]> spots = new LinkedList<>();
-		int[] spot = new int[] { me.x, me.y };
-		main: while (!(spot[0] == goalX && spot[1] == goalY)) {
+
+		// these two are only used if occupied == true
+		int[] closestSpot = null;
+		int closestDistance = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
+
+		while (!(spot[0] == goalX && spot[1] == goalY)) {
 			int left = Math.max(0, spot[0] - maxRadius);
 			int top = Math.max(0, spot[1] - maxRadius);
 			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
 			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
-			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
-			int[] closestPoint = null;
+
 			for (int x = left; x <= right; x++) {
 				int dx = x - spot[0];
-				looping: for (int y = top; y <= bottom; y++) {
+				for (int y = top; y <= bottom; y++) {
 					int dy = y - spot[1];
 					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
 							&& robotMap[y][x] <= 0) {
 						if (from[y * fullMap.length + x] != -1) {
-							continue looping;
+							continue;
 						}
 						int[] newSpot = new int[] { x, y };
 						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
 
-						/*
-						 * if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
-						 * closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y); closestPoint
-						 * = newSpot; continue looping; }
-						 */
-
+						if (occupied) {
+							if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closestDistance) {
+								closestDistance = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
+								closestSpot = newSpot;
+								continue;
+							}
+						}
 						spots.add(newSpot);
 					}
 				}
 			}
 
-			/*
-			 * if (closestPoint != null) { spot = closestPoint; break main; }
-			 */
+			if (!occupied && closestSpot != null) {
+				spot = closestSpot;
+				break;
+			}
 
 			spot = spots.poll();
 			if (spot == null) {
+				// log("exhausted all options");
 				return null;
 			}
 		}
