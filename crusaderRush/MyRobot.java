@@ -42,12 +42,13 @@ public class MyRobot extends BCAbstractRobot {
 	private int globalMinusLocalTurn;
 	private ArrayList<int[]> currentPath = null;
 	private int locInPath;
+	private int[] prevMove;
 
 	public Action turn() {
 		if (me.turn == 1) {
 			getFMap();
 			hRefl = getReflDir();
-
+			
 			setXorKey();
 
 			/*		if(hRefl) // Testing hRefl and fullMap
@@ -187,7 +188,8 @@ public class MyRobot extends BCAbstractRobot {
 		if(me.turn == 1)
 		{			
 			attack = false;
-
+			prevMove = new int[] {0, 1};
+			
 			for(Robot rob : getVisibleRobots())
 			{
 				if(rob.unit == SPECS.CASTLE)
@@ -284,11 +286,12 @@ public class MyRobot extends BCAbstractRobot {
 				if(currentPath == null)
 				{
 					log("oscar fix your BFS");
-					return null;
+					return move(prevMove[0], prevMove[1]);
 				}
 				else
 				{
-					return move(currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y);
+					prevMove = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+					return move(prevMove[0], prevMove[1]);
 				}
 			}
 
