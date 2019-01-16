@@ -48,7 +48,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1) {
 			getFMap();
 			hRefl = getReflDir();
-			
+
 			setXorKey();
 
 			/*		if(hRefl) // Testing hRefl and fullMap
@@ -189,7 +189,7 @@ public class MyRobot extends BCAbstractRobot {
 		{			
 			attack = false;
 			prevMove = new int[] {0, 1};
-			
+
 			for(Robot rob : getVisibleRobots())
 			{
 				if(rob.unit == SPECS.CASTLE)
@@ -249,27 +249,27 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					boolean castleKilled = true;
 					int x, y;
-					
+
 					for(int i = 0; i < 4; i++)
 					{
 						x = enemyCastleLocs[targetCastle][0] + (int) Math.floor(i / 2);
 						y = enemyCastleLocs[targetCastle][1] + i % 2;
-						
+
 						if(getVisibleRobotMap()[y][x] != 0 && (me.x != x || me.y != y))
 						{
 							castleKilled = false;
 						}
 					}
-					
+
 					if(castleKilled)
 					{
 						enemyCastleLocs[targetCastle] = new int[] {-1, -1};
-						
+
 						if(numCastles == 2)
 						{
 							targetCastle = 1 - targetCastle;
 						}
-						
+
 						else if(enemyCastleLocs[1][0] == -1)
 						{
 							targetCastle = enemyCastleLocs[0][0] != -1 ? 0 : 2;
@@ -279,7 +279,7 @@ public class MyRobot extends BCAbstractRobot {
 							targetCastle = 1;
 						}
 					}
-					
+
 					currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 					locInPath = 0;
 				}
@@ -799,22 +799,27 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	// bfs is reaaaally fast now
-	private ArrayList<int[]> bfs(int goalX, int goalY) {
+	private ArrayList<int[]> bfs(int goalX, int goalY)
+	{
 		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
-		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		int maxRadius = me.unit == 3 ? 3 : 2;
 		int[] from = new int[fullMap.length * fullMap.length];
-		for (int i = 0; i < from.length; i++) {
+		
+		for (int i = 0; i < from.length; i++)
+		{
 			from[i] = -1;
 		}
+		
 		LinkedList<int[]> spots = new LinkedList<>();
 		int[] spot = new int[] { me.x, me.y };
-		main: while (!(spot[0] == goalX && spot[1] == goalY)) {
+		
+		main: while (!(spot[0] == goalX && spot[1] == goalY))
+		{
 			int left = Math.max(0, spot[0] - maxRadius);
 			int top = Math.max(0, spot[1] - maxRadius);
 			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
 			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
-			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
-			int[] closestPoint = null;
+			
 			for (int x = left; x <= right; x++) {
 				int dx = x - spot[0];
 				looping: for (int y = top; y <= bottom; y++) {
@@ -827,32 +832,25 @@ public class MyRobot extends BCAbstractRobot {
 						int[] newSpot = new int[] { x, y };
 						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
 
-						/*
-						 * if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
-						 * closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y); closestPoint
-						 * = newSpot; continue looping; }
-						 */
-
 						spots.add(newSpot);
 					}
 				}
 			}
-
-			/*
-			 * if (closestPoint != null) { spot = closestPoint; break main; }
-			 */
-
+			
 			spot = spots.poll();
 			if (spot == null) {
 				return null;
 			}
 		}
+		
 		ArrayList<int[]> ans = new ArrayList<>();
+		
 		while (from[spot[1] * fullMap.length + spot[0]] != -1) {
 			ans.add(0, spot);
 			int prevSpot = from[spot[1] * fullMap.length + spot[0]];
 			spot = new int[] { prevSpot % fullMap.length, (int) (prevSpot / fullMap.length) };
 		}
+		
 		return ans;
 	}
 }
