@@ -804,53 +804,62 @@ public class MyRobot extends BCAbstractRobot {
 		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = me.unit == 3 ? 3 : 2;
 		int[] from = new int[fullMap.length * fullMap.length];
-		
+
 		for (int i = 0; i < from.length; i++)
 		{
 			from[i] = -1;
 		}
-		
+
 		LinkedList<int[]> spots = new LinkedList<>();
 		int[] spot = new int[] { me.x, me.y };
-		
+
 		main: while (!(spot[0] == goalX && spot[1] == goalY))
 		{
 			int left = Math.max(0, spot[0] - maxRadius);
 			int top = Math.max(0, spot[1] - maxRadius);
 			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
 			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
-			
-			for (int x = left; x <= right; x++) {
-				int dx = x - spot[0];
-				looping: for (int y = top; y <= bottom; y++) {
-					int dy = y - spot[1];
-					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
-							&& robotMap[y][x] <= 0) {
-						if (from[y * fullMap.length + x] != -1) {
-							continue looping;
-						}
-						int[] newSpot = new int[] { x, y };
-						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
 
-						spots.add(newSpot);
+			for (int x = left; x <= right; x++)
+			{
+				int dx = x - spot[0];
+				looping: for (int y = top; y <= bottom; y++)
+				{
+					int dy = y - spot[1];
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE)
+					{
+						int robstruction = robotMap[y][x]; // rob + obstruction get it?
+						
+						if(robstruction <= 0 || getRobot(robstruction).unit <= 1)
+						{
+							if (from[y * fullMap.length + x] != -1)
+							{
+								continue looping;
+							}
+							int[] newSpot = new int[] { x, y };
+							from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
+
+							spots.add(newSpot);
+						}
 					}
 				}
 			}
-			
+
 			spot = spots.poll();
-			if (spot == null) {
+			if (spot == null)
+			{
 				return null;
 			}
 		}
-		
+
 		ArrayList<int[]> ans = new ArrayList<>();
-		
+
 		while (from[spot[1] * fullMap.length + spot[0]] != -1) {
 			ans.add(0, spot);
 			int prevSpot = from[spot[1] * fullMap.length + spot[0]];
 			spot = new int[] { prevSpot % fullMap.length, (int) (prevSpot / fullMap.length) };
 		}
-		
+
 		return ans;
 	}
 }
