@@ -226,7 +226,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		return true; // If it gets here, it's reflected both ways.
+		log("it's frickin reflected both ways >:(");
+		return true;
 	}
 
 	private int[] findClosestKarbo() {

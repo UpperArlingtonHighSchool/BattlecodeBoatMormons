@@ -39,6 +39,9 @@ public class MyRobot extends BCAbstractRobot {
 	// separately; don't worry 'bout it.
 	private boolean attack;
 	private int targetCastle;
+	private int globalMinusLocalTurn;
+	private ArrayList<int[]> currentPath = null;
+	private int locInPath;
 
 	public Action turn() {
 		if (me.turn == 1) {
@@ -91,6 +94,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			numCastles = 1;
 			castleIDs[0] = me.id;
+			globalMinusLocalTurn = 0;
 
 			for(Robot rob : getVisibleRobots())
 			{
@@ -139,7 +143,7 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 		}
 
-		if(me.turn > 1 && me.turn < 2 + 5 / numCastles)
+		if(me.turn > 1 && me.turn < 3 + 5 / numCastles)
 		{
 			sendCastleLocs(1);
 
@@ -181,7 +185,7 @@ public class MyRobot extends BCAbstractRobot {
 	private Action crusader()
 	{
 		if(me.turn == 1)
-		{
+		{			
 			attack = false;
 
 			for(Robot rob : getVisibleRobots())
@@ -189,6 +193,7 @@ public class MyRobot extends BCAbstractRobot {
 				if(rob.unit == SPECS.CASTLE)
 				{
 					castleIDs[0] = rob.id;
+					globalMinusLocalTurn = rob.turn - 1;
 				}
 			}
 
@@ -201,18 +206,10 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			else if(numCastles == 2)
 			{
-				if(fullMap[17][22] == 0)
-				{
-					targetCastle = 0;
-				}
-				else
-				{
-					targetCastle = 1;
-				}
+				targetCastle = fullMap[17][22] == 0 ? 0 : 1;				
 			}
 			else if(numCastles == 3)
 			{
-
 				int minInd, maxInd;
 				int min = 64;
 				int max = -1;
@@ -232,6 +229,8 @@ public class MyRobot extends BCAbstractRobot {
 				}
 
 				enemyCastleLocs = new int[][] {enemyCastleLocs[minInd], enemyCastleLocs[3 - minInd - maxInd], enemyCastleLocs[maxInd]};
+
+				targetCastle = fullMap[22][17] == 0 ? 2 : 0;
 			}
 			else
 			{
@@ -239,18 +238,60 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if(!attack)
-		{
-			attack = getVisibleRobots().length == 6;
-		}
-
-		if(attack)
+		if(globalMinusLocalTurn != 1 || me.turn != 2)
 		{
 			AttackAction atk = autoAttack();
 			if(atk == null)
 			{
-				return null;//tryMove(enemyCastleLocs[0][0], enemyCastleLocs[0][1]);
+				if(currentPath == null || locInPath >= currentPath.size() || getVisibleRobotMap()[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+				{
+					boolean castleKilled = true;
+					int x, y;
+					
+					for(int i = 0; i < 4; i++)
+					{
+						x = enemyCastleLocs[targetCastle][0] + (int) Math.floor(i / 2);
+						y = enemyCastleLocs[targetCastle][1] + i % 2;
+						
+						if(getVisibleRobotMap()[y][x] != 0 && (me.x != x || me.y != y))
+						{
+							castleKilled = false;
+						}
+					}
+					
+					if(castleKilled)
+					{
+						enemyCastleLocs[targetCastle] = new int[] {-1, -1};
+						
+						if(numCastles == 2)
+						{
+							targetCastle = 1 - targetCastle;
+						}
+						
+						else if(enemyCastleLocs[1][0] == -1)
+						{
+							targetCastle = enemyCastleLocs[0][0] != -1 ? 0 : 2;
+						}
+						else
+						{
+							targetCastle = 1;
+						}
+					}
+					
+					currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+					locInPath = 0;
+				}
+				if(currentPath == null)
+				{
+					log("oscar fix your BFS");
+					return null;
+				}
+				else
+				{
+					return move(currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y);
+				}
 			}
+
 			else
 			{
 				return atk;
@@ -322,72 +363,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		return true; // If it gets here, it's reflected both ways.
-	}
-
-	private int[] findClosestKarbo() {
-		int minDistance = fullMap.length * fullMap.length;
-		int[] ans;
-		for (int x = 0; x < fullMap[0].length; x++) {
-			looping: for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE) {
-					int[] temp = new int[] { x, y };
-					for (int[] out : karbosInUse) {
-						if (out[0] == temp[0] && out[1] == temp[1]) {
-							if (robotMap[y][x] == 0) {
-								karbosInUse.remove(out);
-							} else {
-								continue looping;
-							}
-						}
-					}
-					if (robotMap[y][x] > 0) {
-						karbosInUse.add(temp);
-						continue looping;
-					}
-					int dx = x - me.x;
-					int dy = y - me.y;
-					if (dx * dx + dy * dy < minDistance) {
-						ans = temp;
-						minDistance = dx * dx + dy * dy;
-					}
-				}
-			}
-		}
-		return ans;
-	}
-
-
-	private int[] findClosestFuel() {
-		int minDistance = fullMap.length * fullMap.length;
-		int[] ans = new int[] { 0, 0 };
-		for (int x = 0; x < fullMap[0].length; x++) {
-			looping: for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE) {
-					int[] temp = new int[] { x, y };
-					for (int[] out : fuelsInUse) {
-						if (out[0] == temp[0] && out[1] == temp[1]) {
-							if (robotMap[y][x] == 0) {
-								fuelsInUse.remove(out);
-							} else {
-								continue looping;
-							}
-						}
-					}
-					if (robotMap[y][x] > 0) {
-						fuelsInUse.add(temp);
-						continue looping;
-					}
-					int dx = x - me.x;
-					int dy = y - me.y;
-					if (dx * dx + dy * dy < minDistance) {
-						ans = temp;
-						minDistance = dx * dx + dy * dy;
-					}
-				}
-			}
-		}
-		return ans;
+		log("it's frickin reflected both ways >:(");
+		return true;
 	}
 
 	private void setXorKey()
