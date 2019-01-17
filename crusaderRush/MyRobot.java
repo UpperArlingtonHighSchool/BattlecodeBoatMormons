@@ -857,7 +857,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-			if (!occupied && closestSpot != null) {
+			if (occupied && closestSpot != null) {
 				spot = closestSpot;
 				break;
 			}
