@@ -138,7 +138,16 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			return null;
 		}
-		for (int robotId : castleIds) {
+		for (int i = 0; i < castleIds.length; i++) {
+			int robotId = castleIds[i];
+			if (id == -1) {
+				continue;
+			}
+			Robot castle = getRobot(robotId);
+			if (castle == null) {
+				castleIds[i] = -1;
+				castleLocations[i] = null;
+			}
 			numOfUnits += getRobot(robotId).castle_talk;
 		}
 		log("global population: " + numOfUnits);
@@ -239,7 +248,6 @@ public class MyRobot extends BCAbstractRobot {
 			if (currentPath == null) {
 				return null;
 			}
-			log("bfs 1: path size of "+currentPath.size());
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
@@ -272,11 +280,9 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		currentPath = bfs(location[0], location[1]);
-		log("want to go to ("+location[0]+", "+location[1]+")");
 		if (currentPath == null) {
 			return null;
 		}
-		log("bfs 2: path size of "+currentPath.size());
 		int[] nextMove = currentPath.get(0);
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
