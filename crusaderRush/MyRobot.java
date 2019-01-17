@@ -837,8 +837,8 @@ public class MyRobot extends BCAbstractRobot {
 				int dx = x - spot[0];
 				for (int y = top; y <= bottom; y++) {
 					int dy = y - spot[1];
-					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE && (robotMap[y][x] <= 0 || getRobot(robotMap[y][x]).unit < 2))
-					{
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
+							&& robotMap[y][x] <= 0) {
 						if (from[y * fullMap.length + x] != -1) {
 							continue;
 						}
@@ -853,7 +853,6 @@ public class MyRobot extends BCAbstractRobot {
 							}
 						}
 						spots.add(newSpot);
-
 					}
 				}
 			}

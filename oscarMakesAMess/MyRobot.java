@@ -140,7 +140,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		for (int i = 0; i < castleIds.length; i++) {
 			int robotId = castleIds[i];
-			if (id == -1) {
+			if (robotId == -1) {
 				continue;
 			}
 			Robot castle = getRobot(robotId);
