@@ -42,7 +42,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int globalMinusLocalTurn;
 	private ArrayList<int[]> currentPath = null;
 	private int locInPath;
-	private int[] prevMove;
+	private int[] prevMove; // basically deprecated
 
 	public Action turn() {
 		if (me.turn == 1) {
@@ -285,13 +285,13 @@ public class MyRobot extends BCAbstractRobot {
 				}
 				if(currentPath == null)
 				{
-					log("oscar fix your BFS");
+					log("turn: " + (me.turn + globalMinusLocalTurn) + "oscar fix your BFS");
 					return move(prevMove[0], prevMove[1]);
 				}
 				else
 				{
-					prevMove = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
-					return move(prevMove[0], prevMove[1]);
+	//				prevMove = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+					return move(currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y);
 				}
 			}
 
