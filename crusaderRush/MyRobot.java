@@ -286,12 +286,21 @@ public class MyRobot extends BCAbstractRobot {
 				if(currentPath == null)
 				{
 					log("Turn: " + (me.turn + globalMinusLocalTurn) + ". Oscar, fix your BFS!");
-					int rand = (int) Math.random() * 8;
+					int rand, newX, newY;
+					rand = (int) (Math.random() * 8);
+					do
+					{
+						rand += 1;
+						rand %= 8;
+						newX = me.x + adjacentSpaces[rand][0];
+						newY = me.y + adjacentSpaces[rand][1];
+					}
+					while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
 					return move(adjacentSpaces[rand][0], adjacentSpaces[rand][1]);
 				}
 				else
 				{
-	//				prevMove = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+					//prevMove = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
 					return move(currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y);
 				}
 			}
@@ -828,8 +837,8 @@ public class MyRobot extends BCAbstractRobot {
 				int dx = x - spot[0];
 				for (int y = top; y <= bottom; y++) {
 					int dy = y - spot[1];
-					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
-							&& robotMap[y][x] <= 0) {
+					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE && (robotMap[y][x] <= 0 || getRobot(robotMap[y][x]).unit < 2))
+					{
 						if (from[y * fullMap.length + x] != -1) {
 							continue;
 						}
@@ -844,6 +853,7 @@ public class MyRobot extends BCAbstractRobot {
 							}
 						}
 						spots.add(newSpot);
+
 					}
 				}
 			}
