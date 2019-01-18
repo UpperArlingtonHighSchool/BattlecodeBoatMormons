@@ -191,8 +191,8 @@ public class MyRobot extends BCAbstractRobot {
 			if (atk == null) {
 				if (currentPath == null 
 						|| locInPath >= currentPath.size()
-						|| getVisibleRobotMap()[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0 
-						/*|| spaceIsCootiesFree(currentPath.get(locInPath)[0], currentPath.get(locInPath)[1])*/
+						|| getVisibleRobotMap()[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0
+						//|| !spaceIsCootiesFree(currentPath.get(locInPath)[0], currentPath.get(locInPath)[1])
 						) {
 					boolean castleKilled = true;
 					int x, y;
@@ -219,14 +219,17 @@ public class MyRobot extends BCAbstractRobot {
 							targetCastle = 1;
 						}
 					}
-
-					currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+					currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 					locInPath = 0;
+				}
+				else
+				{
+					locInPath++;
 				}
 				if (currentPath == null) {
 					log("oscar fix your BFS");
 					log("got stuck at " + me.x + ", " + me.y);
-					//return move(prevMove[0], prevMove[1]);
+					// return move(prevMove[0], prevMove[1]);
 				}
 				
 				prevMove = new int[] { currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y };
@@ -709,7 +712,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (robotMap[goalY][goalX] > 0) {
 			occupied = true;
 		}
-		//int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		// int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
 		LinkedList<int[]> spots = new LinkedList<>();
 		int[] spot = new int[] { me.x, me.y };
@@ -768,65 +771,76 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return ans;
 	}
-	
-	private boolean spaceIsCootiesFree(int x, int y)
-	{
-		for (int[] adj : adjacentSpaces)
-		{
-			if (getVisibleRobotMap()[me.y+adj[1]][me.x+adj[0]] > 0)
+
+	private boolean spaceIsCootiesFree(int x, int y) {
+		int[][] robomap = getVisibleRobotMap();
+		for (int[] adj : adjacentSpaces) {
+			if (y + adj[1] > -1 && y + adj[1] < robomap.length && x + adj[0] > -1 && x + adj[0] < robomap.length)
 			{
-				return true;
+				if (robomap[y + adj[1]][x + adj[0]] > 0) {
+					return false;
+				}
 			}
 		}
 		return true;
 	}
 
-	// bfs is reaaaally fast now
+	// mormons may be polygamists but no touchie touchie
 	private ArrayList<int[]> bfsCooties(int goalX, int goalY) {
-		int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		boolean occupied = false;
+		if (robotMap[goalY][goalX] > 0) {
+			occupied = true;
+		}
+		// int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
-		int[] from = new int[fullMap.length * fullMap.length];
+		LinkedList<int[]> spots = new LinkedList<>();
+		int[] spot = new int[] { me.x, me.y };
+		int[] from = new int[fullMap.length * fullMap[0].length];
 		for (int i = 0; i < from.length; i++) {
 			from[i] = -1;
 		}
-		LinkedList<int[]> spots = new LinkedList<>();
-		int[] spot = new int[] { me.x, me.y };
-		main: while (!(spot[0] == goalX && spot[1] == goalY)) {
+		// these two are only used if occupied == true
+		int[] closestSpot = null;
+		int closestDistance = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
+
+		while (!(spot[0] == goalX && spot[1] == goalY)) {
 			int left = Math.max(0, spot[0] - maxRadius);
 			int top = Math.max(0, spot[1] - maxRadius);
 			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
 			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
-			int closest = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
-			int[] closestPoint = null;
+
 			for (int x = left; x <= right; x++) {
 				int dx = x - spot[0];
-				looping: for (int y = top; y <= bottom; y++) {
+				for (int y = top; y <= bottom; y++) {
 					int dy = y - spot[1];
-					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE && robotMap[y][x] <= 0
+					if (dx * dx + dy * dy <= maxRadius * maxRadius 
+							&& fullMap[y][x] > IMPASSABLE 
+							&& robotMap[y][x] <= 0
 							&& spaceIsCootiesFree(x, y)) {
 						if (from[y * fullMap.length + x] != -1) {
-							continue looping;
+							continue;
 						}
 						int[] newSpot = new int[] { x, y };
 						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
 
-						/*
-						 * if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closest) {
-						 * closest = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y); closestPoint
-						 * = newSpot; continue looping; }
-						 */
-
+						if (occupied) {
+							if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closestDistance) {
+								closestDistance = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
+								closestSpot = newSpot;
+								continue;
+							}
+						}
 						spots.add(newSpot);
 					}
 				}
 			}
-
-			/*
-			 * if (closestPoint != null) { spot = closestPoint; break main; }
-			 */
-
+			if (occupied && closestSpot != null) {
+				spot = closestSpot;
+				break;
+			}
 			spot = spots.poll();
 			if (spot == null) {
+				//log("exhausted all options");
 				return null;
 			}
 		}

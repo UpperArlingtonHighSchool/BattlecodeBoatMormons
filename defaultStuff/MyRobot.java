@@ -791,4 +791,85 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return ans;
 	}
+	
+	private boolean spaceIsCootiesFree(int x, int y) {
+		int[][] robomap = getVisibleRobotMap();
+		for (int[] adj : adjacentSpaces) {
+			if (y + adj[1] > -1 && y + adj[1] < robomap.length && x + adj[0] > -1 && x + adj[0] < robomap.length)
+			{
+				if (robomap[y + adj[1]][x + adj[0]] > 0) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	// mormons may be polygamists but no touchie touchie
+	private ArrayList<int[]> bfsCooties(int goalX, int goalY) {
+		boolean occupied = false;
+		if (robotMap[goalY][goalX] > 0) {
+			occupied = true;
+		}
+		// int fuelCost = SPECS.UNITS[me.unit].FUEL_PER_MOVE;
+		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
+		LinkedList<int[]> spots = new LinkedList<>();
+		int[] spot = new int[] { me.x, me.y };
+		int[] from = new int[fullMap.length * fullMap[0].length];
+		for (int i = 0; i < from.length; i++) {
+			from[i] = -1;
+		}
+		// these two are only used if occupied == true
+		int[] closestSpot = null;
+		int closestDistance = (goalX - me.x) * (goalX - me.x) + (goalY - me.y) * (goalY - me.y);
+
+		while (!(spot[0] == goalX && spot[1] == goalY)) {
+			int left = Math.max(0, spot[0] - maxRadius);
+			int top = Math.max(0, spot[1] - maxRadius);
+			int right = Math.min(fullMap[0].length - 1, spot[0] + maxRadius);
+			int bottom = Math.min(fullMap.length - 1, spot[1] + maxRadius);
+
+			for (int x = left; x <= right; x++) {
+				int dx = x - spot[0];
+				for (int y = top; y <= bottom; y++) {
+					int dy = y - spot[1];
+					if (dx * dx + dy * dy <= maxRadius * maxRadius 
+							&& fullMap[y][x] > IMPASSABLE 
+							&& robotMap[y][x] <= 0
+							&& spaceIsCootiesFree(x, y)) {
+						if (from[y * fullMap.length + x] != -1) {
+							continue;
+						}
+						int[] newSpot = new int[] { x, y };
+						from[y * fullMap.length + x] = spot[1] * fullMap.length + spot[0];
+
+						if (occupied) {
+							if ((goalX - x) * (goalX - x) + (goalY - y) * (goalY - y) < closestDistance) {
+								closestDistance = (goalX - x) * (goalX - x) + (goalY - y) * (goalY - y);
+								closestSpot = newSpot;
+								continue;
+							}
+						}
+						spots.add(newSpot);
+					}
+				}
+			}
+			if (occupied && closestSpot != null) {
+				spot = closestSpot;
+				break;
+			}
+			spot = spots.poll();
+			if (spot == null) {
+				//log("exhausted all options");
+				return null;
+			}
+		}
+		ArrayList<int[]> ans = new ArrayList<>();
+		while (from[spot[1] * fullMap.length + spot[0]] != -1) {
+			ans.add(0, spot);
+			int prevSpot = from[spot[1] * fullMap.length + spot[0]];
+			spot = new int[] { prevSpot % fullMap.length, (int) (prevSpot / fullMap.length) };
+		}
+		return ans;
+	}
 }
