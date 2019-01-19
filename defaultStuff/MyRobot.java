@@ -175,6 +175,12 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 		}
 
+		AttackAction atk = autoAttack();
+		if(atk != null)
+		{
+			return atk;
+		}
+		
 		return null; //default
 	}
 
