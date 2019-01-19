@@ -926,4 +926,31 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return ans;
 	}
+	
+
+	private MoveAction randomAdjMove()
+	{
+		int rand, newX, newY;
+		rand = (int) (Math.random() * 8);
+		int i = 0;
+		do
+		{
+			rand += 1;
+			rand %= 8;
+			i++;
+			newX = me.x + adjacentSpaces[rand][0];
+			newY = me.y + adjacentSpaces[rand][1];
+		}
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0 && i < 8);
+
+		if(i < 8)
+		{
+			return move(adjacentSpaces[rand][0], adjacentSpaces[rand][1]);
+		}
+		else
+		{
+			log("BFS failed and no adjacent movable spaces");
+			return null;
+		}
+	}
 }
