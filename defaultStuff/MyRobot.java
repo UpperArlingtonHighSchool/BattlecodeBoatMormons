@@ -982,7 +982,6 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
 
-		log(adjacentSpaces[rand][0] + " " + adjacentSpaces[rand][1]);
 		return adjacentSpaces[rand];
 	}
 }
