@@ -575,9 +575,13 @@ public class MyRobot extends BCAbstractRobot {
 		return enms.toArray(new Robot[enms.size()]);
 	}
 
-	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in
-	// attackPriority, of lowest ID
+	private AttackAction autoAttack() // Returns null if not enough fuel.
 	{
+		if(fuel < SPECS.UNITS[me.unit].ATTACK_FUEL_COST)
+		{
+			return null;
+		}
+		
 		Robot[] robs = getEnemiesInRange();
 
 		if (robs.length == 0) {
@@ -688,9 +692,14 @@ public class MyRobot extends BCAbstractRobot {
 		return false;
 	}
 
-	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill
-	// enemies, then damage
-	{ // enemy combat units, then damage enemy buildings
+	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill enemies, then damage
+	{ // enemy combat units, then damage enemy buildings. Returns null if not enough fuel.
+		if(fuel < SPECS.UNITS[SPECS.PREACHER].ATTACK_FUEL_COST)
+		{
+			return null;
+		}
+		
+		
 		Robot[] killable = getPreacherKillableRobots();
 		Robot[] allies = getAllies();
 
