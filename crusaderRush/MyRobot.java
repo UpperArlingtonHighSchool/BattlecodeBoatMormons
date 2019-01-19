@@ -245,6 +245,8 @@ public class MyRobot extends BCAbstractRobot {
 			AttackAction atk = autoAttack();
 			if(atk == null)
 			{
+				locInPath += 1;
+
 				if(currentPath == null || locInPath >= currentPath.size() || getVisibleRobotMap()[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 				{
 					boolean castleKilled = true;
@@ -283,24 +285,35 @@ public class MyRobot extends BCAbstractRobot {
 					currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 					locInPath = 0;
 				}
+				
 				if(currentPath == null)
 				{
 					log("Turn: " + (me.turn + globalMinusLocalTurn) + ". Oscar, fix your BFS!");
 					int rand, newX, newY;
 					rand = (int) (Math.random() * 8);
+					int i = 0;
 					do
 					{
 						rand += 1;
 						rand %= 8;
+						i++;
 						newX = me.x + adjacentSpaces[rand][0];
 						newY = me.y + adjacentSpaces[rand][1];
 					}
-					while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
-					return move(adjacentSpaces[rand][0], adjacentSpaces[rand][1]);
+					while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0 && i < 8);
+				
+					if(i < 8)
+					{
+						return move(adjacentSpaces[rand][0], adjacentSpaces[rand][1]);
+					}
+					else
+					{
+						log("BFS failed and no adjacent movable spaces");
+					}
 				}
 				else
 				{
-					//prevMove = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+					log("BFS problems");
 					return move(currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y);
 				}
 			}
