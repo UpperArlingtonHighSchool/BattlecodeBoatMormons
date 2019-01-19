@@ -3,6 +3,7 @@ package bc19;
 import bc19.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
@@ -20,10 +21,13 @@ public class MyRobot extends BCAbstractRobot {
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
 	private int numCastles;
 	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
+	private int[] sortedCastleIDs;
 	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int[] encodedCastleLocs = new int[3];
+	private int[] mapSizeClass;
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
-	private int encodedLocError; // Only for use by castles in first few turns
+	private int[] encodedLocErrors = new int[3]; // Only for use by castles in first few turns
+	private int castleErrorsCatalogued;
 	private final int[][] adjacentSpaces = new int[][] { //Matrix of adjacent spaces, relative to the Robot
 		new int[] {0,1},
 		new int[] {-1,1},
@@ -97,38 +101,70 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
+			sortedCastleIDs = Arrays.copyOf(castleIDs,  3);
+			sortCastleIDs();
+
 			if (numCastles > 1) {
 				sendOwnLoc();
+
+				// Castle location error stuff
+				int tm = (me.team * 2 - 1);
+				int offer = lastOffer[me.team][0] * tm;
+
+				log(offer + " " + ((encodedLocErrors[0] << 2) + getCastleNum(0) + 1));
+
+				if(offer == 0)
+				{
+					castleErrorsCatalogued = 0;
+					return proposeTrade(((encodedLocErrors[0] << 2) + getCastleNum(0) + 1) * tm, 0);
+				}
+				else if(offer < 32) // will actually range from 1 to 31, interestingly enough
+				{
+					castleErrorsCatalogued = 1;
+					encodedLocErrors[(offer - 1) % 4] = ((offer - 1) >> 2);
+					return proposeTrade(((offer << 5) + (encodedLocErrors[0] << 2) + getCastleNum(0) + 1) * tm, 0);
+				}
+				else
+				{
+					castleErrorsCatalogued = 2;
+					encodedLocErrors[(offer - 1) % 4] = ((offer - 1) >> 2);
+					encodedLocErrors[((offer % 32) - 1) % 4] = (((offer % 32) - 1) >> 2);
+					return proposeTrade(offer * tm, ((encodedLocErrors[0] << 2) + getCastleNum(0) + 1) * tm);
+				}//*/
+			}
+			else
+			{
+				plainCastleLocs[0] = new int[] {me.x, me.y};
 			}
 		}
 
 		else if (me.turn == 2) {
 			if (numCastles > 1) {
 				sendOwnLoc();
-			}
 
-			for (int i = 1; i < numCastles; i++) {
+				// castle loc error stuff
+				int tm = (me.team * 2 - 1);
+				int[] offers = new int[] {lastOffer[me.team][0] * tm, lastOffer[me.team][1] * tm};
+				
+				log("errors catalogued: " + castleErrorsCatalogued);
+				
+				if(castleErrorsCatalogued == 0)
+				{
+					encodedLocErrors[((offers[0] % 32) - 1) % 4] = (((offers[0] % 32) - 1) >> 2);
+					encodedLocErrors[(offers[1] - 1) % 4] = ((offers[1] - 1) >> 2);
+				}
+				else if(castleErrorsCatalogued == 1)
+				{
+					encodedLocErrors[(offers[1] - 1) % 4] = ((offers[1] - 1) >> 2);
+				}
+			}
+			
+			for (int i = 1; i < numCastles; i++)
+			{
 				encodedCastleLocs[i] = getRobot(castleIDs[i]).castle_talk;
-				decodeCastleLoc(i);
+				decodeCastleLoc(i, encodedLocErrors[getCastleNum(i)]);
 			}
 
-			sendCastleLocs(1);
-			return buildUnit(SPECS.PILGRIM, 0, 1);
-		}
-
-		else if(me.turn == 3)
-		{
-			castleTalk(encodedLocError ^ (xorKey % 256)); // Only 2 bits so feel free to add more info and also quite unimportant overall
-		}
-
-		if(me.turn == 4)
-		{
-			castleTalk(encodedLocError ^ (xorKey % 256)); // Only 2 bits so feel free to add more info and also quite unimportant overall
-
-
-			for (int i = 1; i < numCastles; i++) {
-				fixLocError(getRobot(castleIDs[i]).castle_talk, i);
-			}
 			getEnemyCastleLocs();
 		}
 
@@ -295,6 +331,40 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
+	private void setMapSizeClass()
+	{
+		int temp = fullMap.length;
+
+		if(temp == 32)
+		{
+			mapSizeClass = new int[] {2, 32};
+		}
+		else if(temp <= 37)
+		{
+			mapSizeClass = new int[] {3, 36};
+		}
+		else if(temp <= 45)
+		{
+			mapSizeClass = new int[] {4, 44};
+		}
+		else if(temp <= 50)
+		{
+			mapSizeClass = new int[] {5, 50};
+		}
+		else if(temp <= 55)
+		{
+			mapSizeClass = new int[] {6, 54};
+		}
+		else if(temp <= 57)
+		{
+			mapSizeClass = new int[] {7, 56};
+		}
+		else
+		{
+			mapSizeClass = new int[] {8, 64};
+		}
+	}
+
 	private void setXorKey()
 	{
 		int[] parts = new int[4];
@@ -308,98 +378,82 @@ public class MyRobot extends BCAbstractRobot {
 
 	private void sendOwnLoc() // Call first and second turn for castles to send their location to other castles
 	{
-		int[] plain; // 0 is location on your half of map; 1 is how far across
-		int[] encoded = new int[2]; // ditto above
-		int temp;
-
 		if(hRefl)
 		{
-			plain = new int[] {me.y, me.x};
+			int realX = me.x % ((int) Math.floor((fullMap.length + 1) / 2));
+			int temp = realX % 2 + (int) Math.floor(realX / 2) * mapSizeClass[1] * 2  + 2 * me.y;
+			encodedCastleLocs[0] = (int) Math.floor(temp / mapSizeClass[0]);
+			encodedLocErrors[0] = temp %  mapSizeClass[0];
 		}
 		else
 		{
-			plain = new int[] {me.x, me.y};
-		}
-
-		encodedLocError = 0;
-		encodedLocError += plain[0] % 2;
-
-		encoded[0] = (int) Math.floor(plain[0] / 2);
-		if(plain[1] >= fullMap.length / 2) // Same thing for opposite sides of the map
-		{
-			temp = (plain[1] - (int) Math.floor(fullMap.length / 2) - 8);
-			encodedLocError += 2 * (temp % 2);
-			encoded[1] = (int) Math.floor(temp / 2);
-		}
-		else
-		{
-			temp = (plain[1] - 3);
-			encodedLocError += 2 * (temp % 2);
-			encoded[1] = (int) Math.floor(temp / 2);
-		}
-
-		if(encoded[1] >= 8)
-		{
-			log("encoded location across value was too big (it was " + encoded[1] + "), it has been set to 7.");
-			encoded[1] = 7;
-		}
-
-		if(encoded[0] >= 32 || encoded[0] < 0)
-		{
-			log("oh no encoded[0] is " + encoded[0]);
-		}
-		if(encoded[1] >= 8 || encoded[1] < 0)
-		{
-			log("oh no encoded[1] is " + encoded[1]);
+			int realY = me.y % ((int) Math.floor((fullMap.length + 1) / 2));
+			int temp = realY % 2 + (int) Math.floor(realY / 2) * mapSizeClass[1] * 2 + 2 * me.x;
+			encodedCastleLocs[0] = (int) Math.floor(temp / mapSizeClass[0]);
+			encodedLocErrors[0] = temp %  mapSizeClass[0];
 		}
 
 		plainCastleLocs[0] = new int[] {me.x, me.y};
-		encodedCastleLocs[0] = encoded[0] * 8 + encoded[1];
 		encodedCastleLocs[0] ^= (xorKey % 256);
 		castleTalk(encodedCastleLocs[0]);
 	}
 
-	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding
-	{									// index of plainCastleLocs.
-		int[] plain = new int[2];
-
-		plain[0] = (int) Math.floor(((xorKey % 256) ^ encodedCastleLocs[i]) / 8) * 2;
-
-		if((hRefl && me.x < fullMap.length / 2) || (!hRefl && me.y < fullMap.length / 2))
+	private void sortCastleIDs() // Smoke and Mirrors track 4
+	{
+		if(sortedCastleIDs[1] > sortedCastleIDs[0])
 		{
-			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + 3;
+			int temp = sortedCastleIDs[1];
+			sortedCastleIDs[1] = sortedCastleIDs[0];
+			sortedCastleIDs[0] = temp;
 		}
-		else
+		if(sortedCastleIDs[2] > sortedCastleIDs[1])
 		{
-			plain[1] = ((int) Math.floor((encodedCastleLocs[i] ^ (xorKey % 256)) % 8) * 2) + (int) Math.floor(fullMap.length / 2) + 8;
+			int temp = sortedCastleIDs[2];
+			sortedCastleIDs[2] = sortedCastleIDs[1];
+			sortedCastleIDs[1] = temp;
 		}
-
-
-		if(hRefl)
+		if(sortedCastleIDs[1] > sortedCastleIDs[0])
 		{
-			plainCastleLocs[i][0] = plain[1];
-			plainCastleLocs[i][1] = plain[0];
+			int temp = sortedCastleIDs[1];
+			sortedCastleIDs[1] = sortedCastleIDs[0];
+			sortedCastleIDs[0] = temp;
 		}
-		else
+	}
+	
+	private int getCastleNum(int index)
+	{
+		for(int i = 0; i < 3; i++)
 		{
-			plainCastleLocs[i] = plain;
+			if(sortedCastleIDs[i] == castleIDs[index])
+			{
+				return i;
+			}
 		}
 	}
 
-	private void fixLocError(int adjustment, int i) // Namely, the small error due to compression in stored location of other castles
+	private void decodeCastleLoc(int i, int adjustment) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding index of plainCastleLocs.
 	{
-		adjustment ^= xorKey % 256; 
-
+		int temp = (encodedCastleLocs[i] ^ (xorKey % 256)) * mapSizeClass[0] + adjustment;
 		if(hRefl)
 		{
-			plainCastleLocs[i][1] += adjustment % 2;
-			plainCastleLocs[i][0] += (int) Math.floor(adjustment / 2);
+			plainCastleLocs[i][0] = (int) Math.floor(temp / (mapSizeClass[1] * 2)) * 2 + (me.x > fullMap.length / 2 ? ((int) Math.floor((fullMap.length + 1) / 2)) : 0);
+			plainCastleLocs[i][1] = (int) Math.floor((temp % (mapSizeClass[1] * 2)) / 2);
 		}
 		else
 		{
-			plainCastleLocs[i][0] += adjustment % 2;
-			plainCastleLocs[i][1] += (int) Math.floor(adjustment / 2);
+			plainCastleLocs[i][0] = (int) Math.floor((temp % (mapSizeClass[1] * 2)) / 2);
+			plainCastleLocs[i][1] = (int) Math.floor(temp / (mapSizeClass[1] * 2)) * 2 + (me.y > fullMap.length / 2 ? ((int) Math.floor((fullMap.length + 1) / 2)) : 0);
 		}
+
+		if(plainCastleLocs[i][0] < 0 || plainCastleLocs[i][0] >= fullMap.length || plainCastleLocs[i][1] < 0 || plainCastleLocs[i][1] >= fullMap.length)
+		{
+			log("Comm error.: " + plainCastleLocs[i][0] + " " + plainCastleLocs[i][1]);
+		}
+	}
+
+	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding index of plainCastleLocs.
+	{
+		decodeCastleLoc(i, (int) Math.floor(mapSizeClass[0] / 2));
 	}
 
 	private void sendCastleLocs(int r2) // Whenever you make a pilgrim, call this. Will give
