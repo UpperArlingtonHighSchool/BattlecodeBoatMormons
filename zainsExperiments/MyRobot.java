@@ -227,10 +227,10 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 
-		// If there's enough pilgrims, build a prophet. DOES NOT WORK
+		// If there's enough pilgrims and some extra fuel, build a prophet. DOES NOT WORK
 		if(numPilgrims >= numOfMines)
 		{
-			if(fuel < SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 || karbonite < SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 100 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
 				int[] loc = randomAdjSq();
 				return buildUnit(4, loc[0], loc[1]);
@@ -239,19 +239,24 @@ public class MyRobot extends BCAbstractRobot {
 
 		// Build a pilgrim
 		int buildX, buildY;
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dy = -1; dy <= 1; dy++) {
-				if (dx == 0 && dy == 0) {
+		for (int dx = -1; dx <= 1; dx++)
+		{
+			for (int dy = -1; dy <= 1; dy++)
+			{
+				if (dx == 0 && dy == 0)
+				{
 					dy++;
 				}
+				
 				buildX = me.x + dx;
 				buildY = me.y + dy;
-				if (buildX > -1 && buildX < fullMap[0].length && buildY > -1 && buildY < fullMap.length
-						&& fullMap[buildY][buildX] > IMPASSABLE && robotMap[buildY][buildX] > 0) {
+				if (buildX < 0 || buildX >= fullMap.length || buildY < 0 || buildY >= fullMap.length
+						|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0)
+				{
 					continue;
 				}
+				
 				numPilgrims++;
-				// signal(numPilgrims, 2);
 				castleTalk(1);
 				return buildUnit(SPECS.PILGRIM, dx, dy);
 			}
