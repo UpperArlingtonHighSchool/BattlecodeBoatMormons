@@ -44,7 +44,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 
-	private int[] sortedcastleIDs;
+	private int[] sortedCastleIDs;
 	private int[] encodedCastleLocs = new int[3];
 	private int[] mapSizeClass;
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
@@ -141,7 +141,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			else
 			{
-				plainCastleLocs[0] = new int[] {me.x, me.y};
+				castleLocs[0] = new int[] {me.x, me.y};
 			}
 		}
 
@@ -402,7 +402,7 @@ public class MyRobot extends BCAbstractRobot {
 			encodedLocErrors[0] = temp %  mapSizeClass[0];
 		}
 
-		plainCastleLocs[0] = new int[] {me.x, me.y};
+		castleLocs[0] = new int[] {me.x, me.y};
 		encodedCastleLocs[0] ^= (xorKey % 256);
 		castleTalk(encodedCastleLocs[0]);
 	}
@@ -440,27 +440,27 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private void decodeCastleLoc(int i, int adjustment) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding index of plainCastleLocs.
+	private void decodeCastleLoc(int i, int adjustment) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding index of castleLocs.
 	{
 		int temp = (encodedCastleLocs[i] ^ (xorKey % 256)) * mapSizeClass[0] + adjustment;
 		if(hRefl)
 		{
-			plainCastleLocs[i][0] = (int) Math.floor(temp / (mapSizeClass[1] * 2)) * 2 + (me.x > fullMap.length / 2 ? ((int) Math.floor((fullMap.length + 1) / 2)) : 0);
-			plainCastleLocs[i][1] = (int) Math.floor((temp % (mapSizeClass[1] * 2)) / 2);
+			castleLocs[i][0] = (int) Math.floor(temp / (mapSizeClass[1] * 2)) * 2 + (me.x > fullMap.length / 2 ? ((int) Math.floor((fullMap.length + 1) / 2)) : 0);
+			castleLocs[i][1] = (int) Math.floor((temp % (mapSizeClass[1] * 2)) / 2);
 		}
 		else
 		{
-			plainCastleLocs[i][0] = (int) Math.floor((temp % (mapSizeClass[1] * 2)) / 2);
-			plainCastleLocs[i][1] = (int) Math.floor(temp / (mapSizeClass[1] * 2)) * 2 + (me.y > fullMap.length / 2 ? ((int) Math.floor((fullMap.length + 1) / 2)) : 0);
+			castleLocs[i][0] = (int) Math.floor((temp % (mapSizeClass[1] * 2)) / 2);
+			castleLocs[i][1] = (int) Math.floor(temp / (mapSizeClass[1] * 2)) * 2 + (me.y > fullMap.length / 2 ? ((int) Math.floor((fullMap.length + 1) / 2)) : 0);
 		}
 
-		if(plainCastleLocs[i][0] < 0 || plainCastleLocs[i][0] >= fullMap.length || plainCastleLocs[i][1] < 0 || plainCastleLocs[i][1] >= fullMap.length)
+		if(castleLocs[i][0] < 0 || castleLocs[i][0] >= fullMap.length || castleLocs[i][1] < 0 || castleLocs[i][1] >= fullMap.length)
 		{
-			log("Comm error.: " + plainCastleLocs[i][0] + " " + plainCastleLocs[i][1]);
+			log("Comm error.: " + castleLocs[i][0] + " " + castleLocs[i][1]);
 		}
 	}
 
-	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding index of plainCastleLocs.
+	private void decodeCastleLoc(int i) // Tell it which index of encodedCastleLocs to decode, it'll put result in corresponding index of castleLocs.
 	{
 		decodeCastleLoc(i, (int) Math.floor(mapSizeClass[0] / 2));
 	}
@@ -488,7 +488,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(rob.unit == SPECS.CASTLE)
 			{
-				plainCastleLocs[0] = new int[] {rob.x, rob.y};
+				castleLocs[0] = new int[] {rob.x, rob.y};
 
 				if(isRadioing(rob))
 				{
@@ -521,13 +521,13 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(hRefl)
 			{
-				enemyCastleLocs[i][0] = fullMap.length - 1 - plainCastleLocs[i][0];
-				enemyCastleLocs[i][1] = plainCastleLocs[i][1];
+				enemyCastleLocs[i][0] = fullMap.length - 1 - castleLocs[i][0];
+				enemyCastleLocs[i][1] = castleLocs[i][1];
 			}
 			else
 			{
-				enemyCastleLocs[i][0] = plainCastleLocs[i][0];
-				enemyCastleLocs[i][1] = fullMap.length - 1 - plainCastleLocs[i][1];
+				enemyCastleLocs[i][0] = castleLocs[i][0];
+				enemyCastleLocs[i][1] = fullMap.length - 1 - castleLocs[i][1];
 			}
 		}
 	}
