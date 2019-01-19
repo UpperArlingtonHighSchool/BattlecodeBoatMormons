@@ -11,23 +11,21 @@ public class MyRobot extends BCAbstractRobot {
 	private final int PASSABLE = 0;
 	private final int KARBONITE = 1;
 	private final int FUEL = 2;
-	private final int[] attackPriority = new int[] { 4, 5, 3, 0, 1, 2 }; // 0: Castle, 1: Church, 2: Pilgrim, 3:
-	// Crusader, 4: Prophet,
-	private boolean hRefl; // true iff reflected horizontally 5: Preacher. Feel free to mess with order in
-	// your robots.
+	private boolean hRefl;
+	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
+	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
+	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
+	// separately; don't worry 'bout it.
+
+	private int numOfUnits = 0;
+	private int numOfMines = 0;
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
 	private int[][] robotMap;
-	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
-	private int numCastles;
-	private int[] castleIDs = new int[3]; // small so we don't worry about if there's only 1 or 2 castles
-	private int[] sortedCastleIDs;
-	private int[][] plainCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
-	private int[] encodedCastleLocs = new int[3];
-	private int[] mapSizeClass;
-	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
-	private int[] encodedLocErrors = new int[3]; // Only for use by castles in first few turns
-	private int castleErrorsCatalogued;
+
+	private ArrayList<int[]> currentPath = new ArrayList<>();
+	private int locInPath;
+	private int home; // index of home castle
 	private final int[][] adjacentSpaces = new int[][] { //Matrix of adjacent spaces, relative to the Robot
 		new int[] {0,1},
 		new int[] {-1,1},
@@ -37,12 +35,21 @@ public class MyRobot extends BCAbstractRobot {
 		new int[] {1,-1},
 		new int[] {1,0},
 		new int[] {1,1}
-	}; 
+	};
 
+	private final int[] attackPriority = new int[] {4, 5, 3, 0, 2, 1};
 
-	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
-	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
-	// separately; don't worry 'bout it.
+	private int numCastles;
+	private int ourDeadCastles = 0;
+	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
+	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+
+	private int[] sortedcastleIDs;
+	private int[] encodedCastleLocs = new int[3];
+	private int[] mapSizeClass;
+	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+	private int[] encodedLocErrors = new int[3]; // Only for use by castles in first few turns
+	private int castleErrorsCatalogued;
 
 	public Action turn() {
 		if (me.turn == 1) {
@@ -224,8 +231,10 @@ public class MyRobot extends BCAbstractRobot {
 				if (!m[i][j]) {
 					fullMap[i][j] = IMPASSABLE;
 				} else if (k[i][j]) {
+					numOfMines++;
 					fullMap[i][j] = KARBONITE;
 				} else if (f[i][j]) {
+					numOfMines++;
 					fullMap[i][j] = FUEL;
 				} else {
 					fullMap[i][j] = PASSABLE;
