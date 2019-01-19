@@ -17,7 +17,7 @@ public class MyRobot extends BCAbstractRobot {
 	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
 	// separately; don't worry 'bout it.
 
-	private int numOfUnits = 0;
+	private int numPilgrims = 0;
 	private int numOfMines = 0;
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
@@ -44,7 +44,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 
-	private int[] sortedcastleIDs;
+	private int[] sortedCastleIDs;
 	private int[] encodedCastleLocs = new int[3];
 	private int[] mapSizeClass;
 	private int[][] enemyCastleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
@@ -90,7 +90,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 
 
-			sortedcastleIDs = Arrays.copyOf(castleIDs,  3);
+			sortedCastleIDs = Arrays.copyOf(castleIDs,  3);
 			sortcastleIDs();
 
 			if (numCastles > 1) {
@@ -154,36 +154,10 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 		}
 
-		
+
 		// Every turn
-		
-		
-		for (int i = 0; i < 3; i++) {
-			int robotID = castleIDs[i];
 
-			if(robotID == -1)
-			{
-				continue;
-			}
 
-			Robot castle = getRobot(robotID);
-			if (castle == null) {
-				ourDeadCastles += 1;
-				castleIDs[i] = -1;
-				castleLocs[i] = null;
-			}
-
-			if(me.turn > 3)
-			{
-				numOfUnits += getRobot(robotID).castle_talk;
-			}
-		}
-
-		if(me.turn % 10 == 0)
-		{
-			log("Turn: " + me.turn + ". Global population: " + numOfUnits);
-		}
-		
 		boolean haveNeighbors = false;
 		checkNeighbors: for (int dx = -1; dx <= 1; dx++) {
 			int tryX = me.x + dx;
@@ -205,13 +179,60 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (haveNeighbors) {
-			signal(numOfUnits, 2);
+			signal(numPilgrims, 2);
 		}
-		if (numOfUnits >= numOfMines || fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
-				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+
+		// Defend if under attack
+		int[] atk = autoAttack();
+		if(atk != null)
+		{
+			if(karbonite >= 30 && fuel >= 50)
+			{
+				return buildUnit(5, atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0));
+			}
+			return attack(atk[0], atk[1]);
+		}
+
+		for (int i = 0; i < 3; i++) {
+			int robotID = castleIDs[i];
+
+			if(robotID == -1)
+			{
+				continue;
+			}
+
+			Robot castle = getRobot(robotID);
+			if (castle == null) {
+				ourDeadCastles += 1;
+				castleIDs[i] = -1;
+				castleLocs[i] = null;
+			}
+
+			if(me.turn > 3)
+			{
+				numPilgrims += getRobot(robotID).castle_talk;
+			}
+		}
+
+		if(me.turn % 20 == 0)
+		{
+			log("Turn: " + me.turn + ". Global population: " + numPilgrims);
+		}
+
+		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
+		{
 			return null;
 		}
-		
+
+		if(numPilgrims >= numOfMines)
+		{
+			if(fuel < SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 || karbonite < SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+			{
+				int[] loc = randomAdjSq();
+				return buildUnit(4, loc[0], loc[1]);
+			}
+		}
+
 		int buildX, buildY;
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {
@@ -224,8 +245,8 @@ public class MyRobot extends BCAbstractRobot {
 						&& fullMap[buildY][buildX] > IMPASSABLE && robotMap[buildY][buildX] > 0) {
 					continue;
 				}
-				numOfUnits++;
-				// signal(numOfUnits, 2);
+				numPilgrims++;
+				// signal(numPilgrims, 2);
 				castleTalk(1);
 				return buildUnit(SPECS.PILGRIM, dx, dy);
 			}
@@ -262,7 +283,7 @@ public class MyRobot extends BCAbstractRobot {
 					karbosInUse.clear();
 					fuelsInUse.clear();
 					if (isRadioing(castle)) {
-						numOfUnits = castle.signal;
+						numPilgrims = castle.signal;
 					}
 				}
 			}
@@ -275,7 +296,7 @@ public class MyRobot extends BCAbstractRobot {
 			int dy = nextMove[1] - me.y;
 			if (robotMap[nextMove[1]][nextMove[0]] <= 0)
 			{
-				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE)
+				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3)
 				{
 					locInPath += 1;
 					return move(dx, dy);
@@ -294,13 +315,21 @@ public class MyRobot extends BCAbstractRobot {
 			if (currentPath == null)
 			{
 				log("Pilgrim BFS returned null.");
-				return randomAdjMove();
+				if(fuel >= 10)
+				{
+					int[] move = randomAdjSq();
+					return move(move[0], move[1]);
+				}
+				else
+				{
+					return null;
+				}
 			}
 
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
-			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
+			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3) {
 				locInPath += 1;
 				return move(dx, dy);
 			}
@@ -318,7 +347,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		int[] location; // Find next mine to go to
-		if (20 * numOfUnits > fuel) {
+		if (20 * numPilgrims > fuel) {
 			location = findClosestFuel();
 		} else {
 			location = findClosestKarbo();
@@ -334,7 +363,7 @@ public class MyRobot extends BCAbstractRobot {
 		int[] nextMove = currentPath.get(0);
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
-		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
+		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3) {
 			currentPath.remove(0);
 			return move(dx, dy);
 		}
@@ -347,11 +376,25 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	private Action prophet() {
-		return null;
+		int[] atk = autoAttack();
+		if(atk != null)
+		{
+			return attack(atk[0], atk[1]);
+		}
+
+		int[] mov = randomAdjSq();
+		return move(mov[0], mov[1]);
 	}
 
 	private Action preacher() {
-		return null;
+		AttackAction atk = preacherAttack();
+		if(atk != null)
+		{
+			return atk;
+		}
+
+		int[] mov = randomAdjSq();
+		return move(mov[0], mov[1]);
 	}
 
 	private void getFMap() // makes fullMap
@@ -548,23 +591,23 @@ public class MyRobot extends BCAbstractRobot {
 
 	private void sortcastleIDs() // Smoke and Mirrors track 4
 	{
-		if(sortedcastleIDs[1] > sortedcastleIDs[0])
+		if(sortedCastleIDs[1] > sortedCastleIDs[0])
 		{
-			int temp = sortedcastleIDs[1];
-			sortedcastleIDs[1] = sortedcastleIDs[0];
-			sortedcastleIDs[0] = temp;
+			int temp = sortedCastleIDs[1];
+			sortedCastleIDs[1] = sortedCastleIDs[0];
+			sortedCastleIDs[0] = temp;
 		}
-		if(sortedcastleIDs[2] > sortedcastleIDs[1])
+		if(sortedCastleIDs[2] > sortedCastleIDs[1])
 		{
-			int temp = sortedcastleIDs[2];
-			sortedcastleIDs[2] = sortedcastleIDs[1];
-			sortedcastleIDs[1] = temp;
+			int temp = sortedCastleIDs[2];
+			sortedCastleIDs[2] = sortedCastleIDs[1];
+			sortedCastleIDs[1] = temp;
 		}
-		if(sortedcastleIDs[1] > sortedcastleIDs[0])
+		if(sortedCastleIDs[1] > sortedCastleIDs[0])
 		{
-			int temp = sortedcastleIDs[1];
-			sortedcastleIDs[1] = sortedcastleIDs[0];
-			sortedcastleIDs[0] = temp;
+			int temp = sortedCastleIDs[1];
+			sortedCastleIDs[1] = sortedCastleIDs[0];
+			sortedCastleIDs[0] = temp;
 		}
 	}
 
@@ -572,7 +615,7 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		for(int i = 0; i < 3; i++)
 		{
-			if(sortedcastleIDs[i] == castleIDs[index])
+			if(sortedCastleIDs[i] == castleIDs[index])
 			{
 				return i;
 			}
@@ -676,13 +719,23 @@ public class MyRobot extends BCAbstractRobot {
 		ArrayList<Robot> enms = new ArrayList<Robot>();
 
 		int minRange, range;
-		if (me.unit == 3) {
+		if (me.unit == 3)
+		{
 			minRange = 1;
 			range = 16;
-		} else if (me.unit == 4) {
+		}
+		else if (me.unit == 4)
+		{
 			minRange = 16;
 			range = 64;
-		} else {
+		}
+		else if(me.unit == 0)
+		{
+			minRange = 1;
+			range = 64;
+		}
+		else
+		{
 			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is not gonna work");
 			minRange = 0;
 			range = 0;
@@ -698,9 +751,13 @@ public class MyRobot extends BCAbstractRobot {
 		return enms.toArray(new Robot[enms.size()]);
 	}
 
-	private AttackAction autoAttack() // NOT (well) TESTED: Attacks unit in attack range of type earliest in
-	// attackPriority, of lowest ID
+	private int[] autoAttack() // Returns null if you don't have enough fuel!
 	{
+		if(fuel < SPECS.UNITS[me.unit].ATTACK_FUEL_COST)
+		{
+			return null;
+		}
+
 		Robot[] robs = getEnemiesInRange();
 
 		if (robs.length == 0) {
@@ -723,7 +780,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		if (priorRobs.size() == 1) {
-			return attack(priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y);
+			return new int[] {priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y};
 		} else if (priorRobs.size() == 0) {
 			log("why are there no enemies and yet autoAttack() has gotten all the way here");
 			return null;
@@ -736,7 +793,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		return attack(getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y);
+		return new int[] {getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y};
 	}
 
 	// For preacherAttack()
@@ -788,8 +845,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	// For preacherAttack()
 	private Robot[] getEnemyBuildings() // Does not return from outside of visibility range :(
-	{ // Do not combine with other preacherAttack() helper methods. Ask Zain for
-		// elaboration if wanted.
+	{ // Do not combine with other preacherAttack() helper methods. Ask Zain for elaboration if wanted.
 		Robot[] robs = getVisibleRobots();
 		ArrayList<Robot> buildings = new ArrayList<Robot>();
 
@@ -811,9 +867,14 @@ public class MyRobot extends BCAbstractRobot {
 		return false;
 	}
 
-	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill
-	// enemies, then damage
-	{ // enemy combat units, then damage enemy buildings
+	public AttackAction preacherAttack() // UNTESTED: Returns best attack for a preacher. No ally damage, then kill enemies, then damage
+	{ // enemy combat units, then damage enemy buildings. Returns null if you don't have enough fuel.
+		if(fuel < SPECS.UNITS[5].ATTACK_FUEL_COST)
+		{
+			return null;
+		}
+
+
 		Robot[] killable = getPreacherKillableRobots();
 		Robot[] allies = getAllies();
 
@@ -1075,7 +1136,7 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	private MoveAction randomAdjMove()
+	private int[] randomAdjSq()
 	{
 		int rand, newX, newY;
 		rand = (int) (Math.random() * 8);
@@ -1087,17 +1148,16 @@ public class MyRobot extends BCAbstractRobot {
 			i++;
 			newX = me.x + adjacentSpaces[rand][0];
 			newY = me.y + adjacentSpaces[rand][1];
-		}
-		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0 && i < 8);
 
-		if(i < 8)
-		{
-			return move(adjacentSpaces[rand][0], adjacentSpaces[rand][1]);
+			if(i > 8)
+			{
+				log("No adjacent movable spaces");
+				return null;
+			}
 		}
-		else
-		{
-			log("BFS failed and no adjacent movable spaces");
-			return null;
-		}
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
+
+		log(adjacentSpaces[rand][0] + " " + adjacentSpaces[rand][1]);
+		return adjacentSpaces[rand];
 	}
 }
