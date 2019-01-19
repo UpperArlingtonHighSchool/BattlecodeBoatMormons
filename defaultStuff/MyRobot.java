@@ -48,7 +48,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1) {
 			getFMap();
 			hRefl = getReflDir();
-
+			setMapSizeClass();
 			setXorKey();
 
 			/*		if(hRefl) // Testing hRefl and fullMap
