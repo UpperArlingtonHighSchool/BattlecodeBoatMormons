@@ -157,7 +157,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		// Every turn
 
-
+		// tell adjacents current numPilgrims
 		boolean haveNeighbors = false;
 		checkNeighbors: for (int dx = -1; dx <= 1; dx++) {
 			int tryX = me.x + dx;
@@ -193,6 +193,7 @@ public class MyRobot extends BCAbstractRobot {
 			return attack(atk[0], atk[1]);
 		}
 
+		// Update numPilgrims and castle deaths
 		for (int i = 0; i < 3; i++) {
 			int robotID = castleIDs[i];
 
@@ -214,16 +215,19 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
+		// Just a log
 		if(me.turn % 20 == 0)
 		{
 			log("Turn: " + me.turn + ". Global population: " + numPilgrims);
 		}
 
+		// Stop if you got no resources
 		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
 		{
 			return null;
 		}
 
+		// If there's enough pilgrims, build a prophet. DOES NOT WORK
 		if(numPilgrims >= numOfMines)
 		{
 			if(fuel < SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 || karbonite < SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
@@ -233,6 +237,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
+		// Build a pilgrim
 		int buildX, buildY;
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {
