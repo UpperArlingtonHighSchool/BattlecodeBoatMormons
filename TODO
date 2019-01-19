@@ -1,20 +1,14 @@
-- Write crusader/preacher rush code
-
-- Defend against crusader/preacher rush code
+- decrease numPilgrims when pilgrims die 
 
 - Strategy development
 	- develop and over-arching strategy
 	
 - Defend mines
 
-- Fix ID part of attack functions
-
 - Test preacherAttack
 
-- Micro for units to spread out so that preachers can't attack multiple
+- findBestMineCluster()
 	
-- findBestMineCluster
-	
-- (prolly Zain) make it so we don't have big problems when map is too big to send locations
+- Maybe fix locations comms?
 	
 - unimportant: Update function to get reflection direction for edge case that devs will prob. make where map is symmetric both ways except castles
