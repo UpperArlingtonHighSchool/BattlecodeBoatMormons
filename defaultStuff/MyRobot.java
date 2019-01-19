@@ -543,13 +543,23 @@ public class MyRobot extends BCAbstractRobot {
 		ArrayList<Robot> enms = new ArrayList<Robot>();
 
 		int minRange, range;
-		if (me.unit == 3) {
+		if (me.unit == 3)
+		{
 			minRange = 1;
 			range = 16;
-		} else if (me.unit == 4) {
+		}
+		else if (me.unit == 4)
+		{
 			minRange = 16;
 			range = 64;
-		} else {
+		}
+		else if(me.unit == 0)
+		{
+			minRange = 1;
+			range = 64;
+		}
+		else
+		{
 			log("you're trying to attack with a non-combat robot or a preacher and autoAttack() is not gonna work");
 			minRange = 0;
 			range = 0;
