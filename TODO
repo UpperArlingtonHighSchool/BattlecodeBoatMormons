@@ -11,4 +11,6 @@
 	
 - Maybe fix locations comms?
 	
+- Add to BFS ability to avoid region (example use: pilgrims don't go w/i range of enemy castle)
+	
 - unimportant: Update function to get reflection direction for edge case that devs will prob. make where map is symmetric both ways except castles
