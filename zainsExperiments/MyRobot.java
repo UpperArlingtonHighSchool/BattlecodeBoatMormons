@@ -31,14 +31,14 @@ public class MyRobot extends BCAbstractRobot {
 	private int numCastles;
 	private int ourDeadCastles = 0;
 	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
-	
+
 	// for castles
-	private int numPilgrims = 0;
+	private int[] numUnits = new int[] {0, 0, 0, 0, 0};
 	private int numFuelMines = 0;
 	private int numKarbMines = 0;
 	private int pilgrimLim;
 	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
-	
+
 	// For pilgrims
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
@@ -85,10 +85,8 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	private Action castle() {		
+	private Action castle() {
 		if (me.turn == 1) {
-			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
-			
 			numCastles = 1;
 			castleIDs[0] = me.id;
 
@@ -100,7 +98,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 
 
-			sortedCastleIDs = Arrays.copyOf(castleIDs,  3);
+			sortedCastleIDs = Arrays.copyOf(castleIDs, 3);
 			sortcastleIDs();
 
 			if (numCastles > 1) {
@@ -167,7 +165,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		// Every turn
 
-		// tell adjacents current numPilgrims
+		// tell adjacents current numUnits[1]
 		boolean haveNeighbors = false;
 		checkNeighbors: for (int dx = -1; dx <= 1; dx++) {
 			int tryX = me.x + dx;
@@ -189,11 +187,11 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		if (haveNeighbors) {
-			signal(numPilgrims, 2);
+			signal(numUnits[1], 2);
 		}
 
 
-		// Update numPilgrims and castle deaths
+		// Update numUnits[1] and castle deaths
 		for (int i = 0; i < 3; i++) {
 			int robotID = castleIDs[i];
 
@@ -211,47 +209,56 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(me.turn > 3)
 			{
-				numPilgrims += getRobot(robotID).castle_talk;
+				int talk = getRobot(robotID).castle_talk;
+				if(talk >= 1 && talk <= 5)
+				{
+					numUnits[talk - 1] += 1;
+				}
 			}
 		}
 
 		// Just a log
 		if(me.turn % 20 == 0)
 		{
-			log("Turn: " + me.turn + ". Global population: " + numPilgrims);
+			log("Turn: " + me.turn + ". Pilgrim population: " + numUnits[1] + ". Prophet population:  " + numUnits[3] + ". Pilgrim limit: " + pilgrimLim + ".");
 		}
-		
+
 		// Defend if under attack
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
 			int[] loc = availAdjSq(new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)});
-			
+
 			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM && loc != null)
 			{
 				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
+				castleTalk(5);
 				return buildUnit(5, loc[0], loc[1]);
 			}
-			
+
 			return attack(atk[0], atk[1]);
 		}
 
 		// Stop if you got no resources (leave enough resources to comm and for other pilgrims to mine too)
-		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + numPilgrims + 2 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
+		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + numUnits[1] + 2 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
 		{
 			return null;
 		}
 
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
-		if(numPilgrims >= pilgrimLim)
+		if(numUnits[1] >= pilgrimLim)
 		{
-			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
 				int[] loc = randomAdjSq();
-				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
-				return buildUnit(4, loc[0], loc[1]);
+				if(loc != null)
+				{
+					sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
+					castleTalk(4);
+					return buildUnit(4, loc[0], loc[1]);
+				}
 			}
-			
+
 			return null;
 		}
 
@@ -260,8 +267,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(loc != null)
 		{
-			numPilgrims++;
-			castleTalk(1);
+			castleTalk(2);
 			sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
 			return buildUnit(SPECS.PILGRIM, loc[0], loc[1]);
 		}
@@ -297,7 +303,7 @@ public class MyRobot extends BCAbstractRobot {
 					karbosInUse.clear();
 					fuelsInUse.clear();
 					if (isRadioing(castle)) {
-						numPilgrims = castle.signal;
+						numUnits[1] = castle.signal;
 					}
 				}
 			}
@@ -311,7 +317,7 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				int dx = nextMove[0] - me.x;
 				int dy = nextMove[1] - me.y;
-				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 5) // leave fuel for some mining
+				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + pilgrimLim * 0.7) // leave fuel for some mining
 				{
 					locInPath += 1;
 					return move(dx, dy);
@@ -329,7 +335,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (currentPath == null)
 			{
 				log("Pilgrim BFS returned null.");
-				if(fuel >= 10) // leave fuel for mining
+				if(fuel >= pilgrimLim) // leave fuel for mining
 				{
 					int[] move = randomAdjSq();
 					return move(move[0], move[1]);
@@ -343,7 +349,7 @@ public class MyRobot extends BCAbstractRobot {
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
-			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 5) // leave fuel for some mining
+			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + pilgrimLim * 0.7) // leave fuel for some mining
 			{
 				locInPath += 1;
 				return move(dx, dy);
@@ -362,7 +368,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		int[] location; // Find next mine to go to
-		if (20 * numPilgrims > fuel) {
+		if (20 * numUnits[1] > fuel) {
 			location = findClosestFuel();
 		} else {
 			location = findClosestKarbo();
@@ -414,7 +420,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		int[] mov = randomAdjSq();
-		if(mov != null)
+		if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
 		{
 			return move(mov[0], mov[1]);
 		}
@@ -429,7 +435,7 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 		}
-		
+
 		AttackAction atk = preacherAttack();
 		if(atk != null)
 		{
@@ -437,7 +443,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		int[] mov = randomAdjSq();
-		if(mov != null)
+		if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 3 + pilgrimLim * 6)
 		{
 			return move(mov[0], mov[1]);
 		}
@@ -471,6 +477,8 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
+		
+		pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
 	}
 
 	private boolean getReflDir() // set hRefl
@@ -1208,13 +1216,13 @@ public class MyRobot extends BCAbstractRobot {
 			log("That is not a valid target for availAdjSq(). Returning null.");
 			return null;
 		}
-		
+
 		int newX = me.x + adjacentSpaces[i][0];
 		int newY = me.y + adjacentSpaces[i][1];
 
 		int delta = 1;
 		int sign = 1;
-		
+
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0)
 		{
 			if(delta >= 8)
@@ -1222,20 +1230,20 @@ public class MyRobot extends BCAbstractRobot {
 				log("No adjacent movable spaces (from availAdjSq()).");
 				return null;
 			}
-			
+
 			i += delta * sign;
 			i %= 8;
-			
+
 			newX = me.x + adjacentSpaces[i][0];
 			newY = me.y + adjacentSpaces[i][1];
-			
+
 			delta += 1;
 			sign *= -1;
 		}
-		
+
 		return adjacentSpaces[i];
 	}
-	
+
 	private int[] randomAdjSq()
 	{
 		int rand, newX, newY;
@@ -1248,8 +1256,8 @@ public class MyRobot extends BCAbstractRobot {
 			i++;
 			newX = me.x + adjacentSpaces[rand][0];
 			newY = me.y + adjacentSpaces[rand][1];
-
-			if(i > 8)
+			
+			if(i >= 8)
 			{
 				log("No adjacent movable spaces (from randomAdjSq()).");
 				return null;
