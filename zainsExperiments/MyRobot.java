@@ -504,10 +504,57 @@ public class MyRobot extends BCAbstractRobot {
 			return atk;
 		}
 
-		int[] mov = randomAdjSq();
-		if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 3 + pilgrimLim * 6)
+		if(me.turn + globalMinusLocalTurn > 400)
 		{
-			return move(mov[0], mov[1]);
+			updateTargetCastle();
+
+			if (currentPath == null)
+			{
+				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+			}
+
+			int[] loc = currentPath.get(locInPath);
+			if(robotMap[loc[1]][loc[0]] > 0)
+			{
+				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+			}
+
+			if (currentPath == null)
+			{
+				log("Prophet BFS returned null.");
+				if(fuel >= pilgrimLim * 2) // leave fuel for mining
+				{
+					int[] mov = randomAdjSq();
+
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+				}
+				else
+				{
+					return null;
+				}
+			}
+
+			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+			{
+				locInPath += 1;
+				return move(mov[0], mov[1]);
+			}
+			else
+			{
+				return null;
+			}
+		}
+		else
+		{
+			int[] mov = randomAdjSq();
+			if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
+			{
+				return move(mov[0], mov[1]);
+			}
 		}
 
 		return null;
