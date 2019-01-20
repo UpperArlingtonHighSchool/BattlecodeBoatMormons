@@ -249,9 +249,9 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
-//		if(numUnits[1] >= pilgrimLim)			HERE IT IS 1/4
+		if(numUnits[1] >= pilgrimLim)
 		{
-			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+			if(me.turn < 300 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
 				int[] loc = randomAdjSq();
 				if(loc != null)
@@ -264,7 +264,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			return null;
 		}
-/* HERE IT IS 2/4
+
 		// Build a pilgrim
 		int[] loc = randomAdjSq();
 
@@ -275,7 +275,7 @@ public class MyRobot extends BCAbstractRobot {
 			return buildUnit(SPECS.PILGRIM, loc[0], loc[1]);
 		}
 
-		return null; //default HERE IT IS 3/4 */
+		return null; //default
 	}
 
 	private Action church() {
@@ -433,19 +433,17 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if(me.turn + globalMinusLocalTurn > 10)//400) HERE IT IS 4/4
+		if(me.turn + globalMinusLocalTurn > 400)
 		{
-			//log(enemyCastleLocs + " " + targetCastle);
-
 			if (currentPath == null)
 			{
-				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
 
 			int[] loc = currentPath.get(locInPath);
 			if(robotMap[loc[1]][loc[0]] > 0)
 			{
-				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
 			
 			if (currentPath == null)
