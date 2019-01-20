@@ -31,6 +31,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int numCastles;
 	private int ourDeadCastles = 0;
 	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+	private int globalMinusLocalTurn;
 
 	// for castles
 	private int[] numUnits = new int[] {0, 0, 0, 0, 0};
@@ -44,12 +45,13 @@ public class MyRobot extends BCAbstractRobot {
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
 
 	// For pathing
-	private ArrayList<int[]> currentPath = new ArrayList<>();
+	private ArrayList<int[]> currentPath = null;
 	private int locInPath;
 	private int home; // index of home castle
 
 	// For attacking
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 2, 1};
+	private int targetCastle;
 
 	// For castles, for communicating locations 
 	private int[] sortedCastleIDs;
@@ -247,7 +249,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
-		if(numUnits[1] >= pilgrimLim)
+//		if(numUnits[1] >= pilgrimLim)			HERE IT IS 1/4
 		{
 			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
@@ -262,7 +264,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			return null;
 		}
-
+/* HERE IT IS 2/4
 		// Build a pilgrim
 		int[] loc = randomAdjSq();
 
@@ -273,7 +275,7 @@ public class MyRobot extends BCAbstractRobot {
 			return buildUnit(SPECS.PILGRIM, loc[0], loc[1]);
 		}
 
-		return null; //default
+		return null; //default HERE IT IS 3/4 */
 	}
 
 	private Action church() {
@@ -415,20 +417,74 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
+			getTargetCastle();
 		}
 
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
-			return attack(atk[0], atk[1]);
+			if(fuel >= 25)
+			{
+				return attack(atk[0], atk[1]);
+			}
+			else
+			{
+				return null;
+			}
 		}
 
-		int[] mov = randomAdjSq();
-		if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
+		if(me.turn + globalMinusLocalTurn > 10)//400) HERE IT IS 4/4
 		{
-			return move(mov[0], mov[1]);
-		}
+			//log(enemyCastleLocs + " " + targetCastle);
 
+			if (currentPath == null)
+			{
+				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+			}
+
+			int[] loc = currentPath.get(locInPath);
+			if(robotMap[loc[1]][loc[0]] > 0)
+			{
+				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+			}
+			
+			if (currentPath == null)
+			{
+				log("Prophet BFS returned null.");
+				if(fuel >= pilgrimLim * 2) // leave fuel for mining
+				{
+					int[] mov = randomAdjSq();
+
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+				}
+				else
+				{
+					return null;
+				}
+			}
+
+			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+			{
+				locInPath += 1;
+				return move(mov[0], mov[1]);
+			}
+			else
+			{
+				return null;
+			}
+		}
+		else
+		{
+			int[] mov = randomAdjSq();
+			if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
+			{
+				return move(mov[0], mov[1]);
+			}
+		}
 		return null;
 	}
 
@@ -439,6 +495,7 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
+			getTargetCastle();
 		}
 
 		AttackAction atk = preacherAttack();
@@ -752,6 +809,8 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					numCastles = 1;
 				}
+
+				globalMinusLocalTurn = rob.turn - me.turn;
 			}
 		}
 	}
@@ -770,6 +829,46 @@ public class MyRobot extends BCAbstractRobot {
 				enemyCastleLocs[i][0] = castleLocs[i][0];
 				enemyCastleLocs[i][1] = fullMap.length - 1 - castleLocs[i][1];
 			}
+		}
+	}
+
+	private void getTargetCastle()
+	{
+		if(numCastles == 1)
+		{
+			targetCastle = 0;
+		}
+		else if(numCastles == 2)
+		{
+			targetCastle = fullMap[17][22] == 0 ? 0 : 1;				
+		}
+		else if(numCastles == 3)
+		{
+			int minInd, maxInd;
+			int min = 64;
+			int max = -1;
+
+			for(int i = 0; i < 3; i++)
+			{
+				if(enemyCastleLocs[i][hRefl ? 1 : 0] < min)
+				{
+					minInd = i;
+					min = enemyCastleLocs[i][hRefl ? 1 : 0];
+				}
+				if(enemyCastleLocs[i][hRefl ? 1 : 0] > max)
+				{
+					maxInd = i;
+					max = enemyCastleLocs[i][hRefl ? 1 : 0];
+				}
+			}
+
+			enemyCastleLocs = new int[][] {enemyCastleLocs[minInd], enemyCastleLocs[3 - minInd - maxInd], enemyCastleLocs[maxInd]};
+
+			targetCastle = fullMap[22][17] == 0 ? 2 : 0;
+		}
+		else
+		{
+			log("uh oh crusader numCastles is " + numCastles);
 		}
 	}
 
