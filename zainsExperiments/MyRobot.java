@@ -186,9 +186,11 @@ public class MyRobot extends BCAbstractRobot {
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
-			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit == SPECS.PILGRIM)
+			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM)
 			{
-				return buildUnit(5, atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0));
+				int[] loc = new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)};
+				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
+				return buildUnit(5, loc[0], loc[1]);
 			}
 			return attack(atk[0], atk[1]);
 		}
@@ -222,7 +224,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		// Stop if you got no resources
-		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
+		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 5 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
 		{
 			return null;
 		}
@@ -233,33 +235,20 @@ public class MyRobot extends BCAbstractRobot {
 			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 100 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
 				int[] loc = randomAdjSq();
+				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
 				return buildUnit(4, loc[0], loc[1]);
 			}
 		}
 
 		// Build a pilgrim
-		int buildX, buildY;
-		for (int dx = -1; dx <= 1; dx++)
+		int[] loc = randomAdjSq();
+
+		if(loc != null)
 		{
-			for (int dy = -1; dy <= 1; dy++)
-			{
-				if (dx == 0 && dy == 0)
-				{
-					dy++;
-				}
-				
-				buildX = me.x + dx;
-				buildY = me.y + dy;
-				if (buildX < 0 || buildX >= fullMap.length || buildY < 0 || buildY >= fullMap.length
-						|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0)
-				{
-					continue;
-				}
-				
-				numPilgrims++;
-				castleTalk(1);
-				return buildUnit(SPECS.PILGRIM, dx, dy);
-			}
+			numPilgrims++;
+			castleTalk(1);
+			sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
+			return buildUnit(SPECS.PILGRIM, loc[0], loc[1]);
 		}
 
 		return null; //default
@@ -275,7 +264,7 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 		}
-				
+
 		Robot castle = null; // Determine whether adjacent to a castle
 		for (int dx = -1; dx <= 1; dx++) {
 			int testX = me.x + dx;
@@ -314,7 +303,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		
+
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY // Give to castle or find new path to castle when at carrying capacity
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
 			if (castle != null) {
@@ -371,7 +360,7 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 		int[] nextMove = currentPath.get(locInPath);
-				
+
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
 		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3)
@@ -383,11 +372,25 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	private Action crusader() {
+	private Action crusader()
+	{
+		if (me.turn == 1)
+		{
+			getAllCastleLocs();
+			getEnemyCastleLocs();
+		}
+
 		return null;
 	}
 
-	private Action prophet() {
+	private Action prophet()
+	{
+		if (me.turn == 1)
+		{
+			getAllCastleLocs();
+			getEnemyCastleLocs();
+		}
+
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
@@ -395,10 +398,22 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		int[] mov = randomAdjSq();
-		return move(mov[0], mov[1]);
+		if(mov != null)
+		{
+			return move(mov[0], mov[1]);
+		}
+
+		return null;
 	}
 
-	private Action preacher() {
+	private Action preacher()
+	{
+		if (me.turn == 1)
+		{
+			getAllCastleLocs();
+			getEnemyCastleLocs();
+		}
+		
 		AttackAction atk = preacherAttack();
 		if(atk != null)
 		{
@@ -406,7 +421,12 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		int[] mov = randomAdjSq();
-		return move(mov[0], mov[1]);
+		if(mov != null)
+		{
+			return move(mov[0], mov[1]);
+		}
+
+		return null;
 	}
 
 	private void getFMap() // makes fullMap
@@ -1001,7 +1021,7 @@ public class MyRobot extends BCAbstractRobot {
 	// bfs is reaaaally fast now
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
 		locInPath = 0;
-		
+
 		boolean occupied = false;
 		if (robotMap[goalY][goalX] > 0) {
 			occupied = true;
@@ -1085,7 +1105,7 @@ public class MyRobot extends BCAbstractRobot {
 	// mormons may be polygamists but no touchie touchie
 	private ArrayList<int[]> bfsCooties(int goalX, int goalY) {
 		locInPath = 0;
-		
+
 		boolean occupied = false;
 		if (robotMap[goalY][goalX] > 0) {
 			occupied = true;
