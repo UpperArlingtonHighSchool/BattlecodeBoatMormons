@@ -186,7 +186,7 @@ public class MyRobot extends BCAbstractRobot {
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
-			if(karbonite >= 30 && fuel >= 50)
+			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit == SPECS.PILGRIM)
 			{
 				return buildUnit(5, atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0));
 			}
@@ -370,11 +370,11 @@ public class MyRobot extends BCAbstractRobot {
 		if (currentPath == null) {
 			return null;
 		}
-		int[] nextMove = currentPath.get(0);
+		int[] nextMove = currentPath.get(locInPath);
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
 		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3) {
-			currentPath.remove(0);
+			locInPath += 1;
 			return move(dx, dy);
 		}
 
@@ -648,7 +648,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(castleLocs[i][0] < 0 || castleLocs[i][0] >= fullMap.length || castleLocs[i][1] < 0 || castleLocs[i][1] >= fullMap.length)
 		{
-			log("Comm error.: " + castleLocs[i][0] + " " + castleLocs[i][1]);
+			log("Comm error.: " + castleLocs[i][0] + " " + castleLocs[i][1] + " " + me.unit);
 		}
 	}
 
