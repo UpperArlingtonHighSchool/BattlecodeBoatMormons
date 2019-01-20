@@ -227,7 +227,7 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 
-		// If there's enough pilgrims and some extra fuel, build a prophet. DOES NOT WORK
+		// If there's enough pilgrims and some extra fuel, build a prophet.
 		if(numPilgrims >= numOfMines)
 		{
 			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 100 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
@@ -371,15 +371,14 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 		int[] nextMove = currentPath.get(locInPath);
-		
-	//	log(nextMove + " NEXT MOVE");
-		
+				
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
-		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3) {
+		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3)
+		{
 			locInPath += 1;
 			return move(dx, dy);
-		}//*/
+		}
 
 		return null;
 	}
@@ -1031,7 +1030,7 @@ public class MyRobot extends BCAbstractRobot {
 				for (int y = top; y <= bottom; y++) {
 					int dy = y - spot[1];
 					if (dx * dx + dy * dy <= maxRadius * maxRadius && fullMap[y][x] > IMPASSABLE
-							&& (robotMap[y][x] <= 0 || getRobot(robotMap[y][x]).unit < 2)) {
+							&& (robotMap[y][x] <= 0/* || getRobot(robotMap[y][x]).unit < 2*/)) {
 						if (from[y * fullMap.length + x] != -1) {
 							continue;
 						}
