@@ -131,7 +131,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		return null;
+		return autoAttack();
 	}
 
 	private Action church() {
