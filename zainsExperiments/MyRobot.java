@@ -275,7 +275,7 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 		}
-		
+				
 		Robot castle = null; // Determine whether adjacent to a castle
 		for (int dx = -1; dx <= 1; dx++) {
 			int testX = me.x + dx;
@@ -314,7 +314,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-
+		
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY // Give to castle or find new path to castle when at carrying capacity
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
 			if (castle != null) {
@@ -322,7 +322,6 @@ public class MyRobot extends BCAbstractRobot {
 			}
 
 			currentPath = bfs(castleLocs[home][0], castleLocs[home][1]);
-			locInPath = 0;
 			if (currentPath == null)
 			{
 				log("Pilgrim BFS returned null.");
@@ -372,12 +371,15 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 		int[] nextMove = currentPath.get(locInPath);
+		
+	//	log(nextMove + " NEXT MOVE");
+		
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
 		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3) {
 			locInPath += 1;
 			return move(dx, dy);
-		}
+		}//*/
 
 		return null;
 	}
@@ -999,6 +1001,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	// bfs is reaaaally fast now
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
+		locInPath = 0;
+		
 		boolean occupied = false;
 		if (robotMap[goalY][goalX] > 0) {
 			occupied = true;
@@ -1081,6 +1085,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	// mormons may be polygamists but no touchie touchie
 	private ArrayList<int[]> bfsCooties(int goalX, int goalY) {
+		locInPath = 0;
+		
 		boolean occupied = false;
 		if (robotMap[goalY][goalX] > 0) {
 			occupied = true;
