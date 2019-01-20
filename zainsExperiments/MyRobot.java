@@ -77,7 +77,7 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	private Action castle() {
+	private Action castle() {		
 		if (me.turn == 1) {
 			numCastles = 1;
 			castleIDs[0] = me.id;
@@ -161,7 +161,7 @@ public class MyRobot extends BCAbstractRobot {
 		boolean haveNeighbors = false;
 		checkNeighbors: for (int dx = -1; dx <= 1; dx++) {
 			int tryX = me.x + dx;
-			if (tryX <= -1 || tryX >= fullMap[0].length) {
+			if (tryX <= -1 || tryX >= fullMap.length) {
 				continue;
 			}
 			for (int dy = -1; dy <= 1; dy++) {
@@ -275,11 +275,11 @@ public class MyRobot extends BCAbstractRobot {
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 		}
-
+		
 		Robot castle = null; // Determine whether adjacent to a castle
 		for (int dx = -1; dx <= 1; dx++) {
 			int testX = me.x + dx;
-			if (testX <= -1 || testX >= fullMap[0].length) {
+			if (testX <= -1 || testX >= fullMap.length) {
 				continue;
 			}
 			for (int dy = -1; dy <= 1; dy++) {
@@ -302,10 +302,11 @@ public class MyRobot extends BCAbstractRobot {
 		if (currentPath != null && currentPath.size() > locInPath) // Continue on path
 		{
 			int[] nextMove = currentPath.get(locInPath);
-			int dx = nextMove[0] - me.x;
-			int dy = nextMove[1] - me.y;
+
 			if (robotMap[nextMove[1]][nextMove[0]] <= 0)
 			{
+				int dx = nextMove[0] - me.x;
+				int dy = nextMove[1] - me.y;
 				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3)
 				{
 					locInPath += 1;
@@ -1006,7 +1007,7 @@ public class MyRobot extends BCAbstractRobot {
 		int maxRadius = (int) Math.sqrt(SPECS.UNITS[me.unit].SPEED);
 		LinkedList<int[]> spots = new LinkedList<>();
 		int[] spot = new int[] { me.x, me.y };
-		int[] from = new int[fullMap.length * fullMap[0].length];
+		int[] from = new int[fullMap.length * fullMap.length];
 		for (int i = 0; i < from.length; i++) {
 			from[i] = -1;
 		}
