@@ -7,26 +7,18 @@ import java.util.Arrays;
 import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
+	// important
 	private final int IMPASSABLE = -1;
 	private final int PASSABLE = 0;
 	private final int KARBONITE = 1;
 	private final int FUEL = 2;
 	private boolean hRefl;
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
+	private int[][] robotMap;
 	private int xorKey; // XOR any signal by this, and any castletalk by this % 256
 	// Note: the encodedCastleLocs are sort of separate and thus XOR'd with this % 256
 	// separately; don't worry 'bout it.
-
-	private int numPilgrims = 0;
-	private int numOfMines = 0;
-	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
-	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
-	private int[][] robotMap;
-
-	private ArrayList<int[]> currentPath = new ArrayList<>();
-	private int locInPath;
-	private int home; // index of home castle
-	private final int[][] adjacentSpaces = new int[][] { //Matrix of adjacent spaces, relative to the Robot
+	private final int[][] adjacentSpaces = new int[][] { // Matrix of adjacent spaces, relative to the Robot
 		new int[] {0,1},
 		new int[] {-1,1},
 		new int[] {-1,0},
@@ -36,14 +28,30 @@ public class MyRobot extends BCAbstractRobot {
 		new int[] {1,0},
 		new int[] {1,1}
 	};
-
-	private final int[] attackPriority = new int[] {4, 5, 3, 0, 2, 1};
-
 	private int numCastles;
 	private int ourDeadCastles = 0;
-	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
 	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
+	
+	// for castles
+	private int numPilgrims = 0;
+	private int numFuelMines = 0;
+	private int numKarbMines = 0;
+	private int pilgrimLim;
+	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
+	
+	// For pilgrims
+	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
+	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
 
+	// For pathing
+	private ArrayList<int[]> currentPath = new ArrayList<>();
+	private int locInPath;
+	private int home; // index of home castle
+
+	// For attacking
+	private final int[] attackPriority = new int[] {4, 5, 3, 0, 2, 1};
+
+	// For castles, for communicating locations 
 	private int[] sortedCastleIDs;
 	private int[] encodedCastleLocs = new int[3];
 	private int[] mapSizeClass;
@@ -79,6 +87,8 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action castle() {		
 		if (me.turn == 1) {
+			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
+			
 			numCastles = 1;
 			castleIDs[0] = me.id;
 
@@ -217,7 +227,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM)
 			{
-				int[] loc = new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)};
+				int[] loc = new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)};	 //MAKE SURE YOU CAN ACTUALLY SPAWN THEM!!!!!
 				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
 				return buildUnit(5, loc[0], loc[1]);
 			}
@@ -232,7 +242,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
-		if(numPilgrims >= numOfMines)
+		if(numPilgrims >= pilgrimLim)
 		{
 			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
@@ -240,6 +250,8 @@ public class MyRobot extends BCAbstractRobot {
 				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
 				return buildUnit(4, loc[0], loc[1]);
 			}
+			
+			return null;
 		}
 
 		// Build a pilgrim
@@ -448,10 +460,10 @@ public class MyRobot extends BCAbstractRobot {
 				if (!m[i][j]) {
 					fullMap[i][j] = IMPASSABLE;
 				} else if (k[i][j]) {
-					numOfMines++;
+					numKarbMines++;
 					fullMap[i][j] = KARBONITE;
 				} else if (f[i][j]) {
-					numOfMines++;
+					numFuelMines++;
 					fullMap[i][j] = FUEL;
 				} else {
 					fullMap[i][j] = PASSABLE;
