@@ -435,6 +435,8 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(me.turn + globalMinusLocalTurn > 400)
 		{
+			updateTargetCastle();
+
 			if (currentPath == null)
 			{
 				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
@@ -445,7 +447,7 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
-			
+
 			if (currentPath == null)
 			{
 				log("Prophet BFS returned null.");
@@ -1140,6 +1142,42 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		return attack(finalBestLoc[0] - 4, finalBestLoc[1] - 4);
+	}
+
+	private void updateTargetCastle()
+	{
+		boolean castleKilled = true;
+		int x, y;
+
+		for(int i = 0; i < 4; i++)
+		{
+			x = enemyCastleLocs[targetCastle][0] + (int) Math.floor(i / 2);
+			y = enemyCastleLocs[targetCastle][1] + i % 2;
+
+			if(getVisibleRobotMap()[y][x] != 0 && (me.x != x || me.y != y))
+			{
+				castleKilled = false;
+			}
+		}
+
+		if(castleKilled)
+		{
+			enemyCastleLocs[targetCastle] = new int[] {-1, -1};
+
+			if(numCastles == 2)
+			{
+				targetCastle = 1 - targetCastle;
+			}
+
+			else if(enemyCastleLocs[1][0] == -1)
+			{
+				targetCastle = enemyCastleLocs[0][0] != -1 ? 0 : 2;
+			}
+			else
+			{
+				targetCastle = 1;
+			}
+		}
 	}
 
 	// bfs is reaaaally fast now
