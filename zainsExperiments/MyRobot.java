@@ -182,18 +182,6 @@ public class MyRobot extends BCAbstractRobot {
 			signal(numPilgrims, 2);
 		}
 
-		// Defend if under attack
-		int[] atk = autoAttack();
-		if(atk != null)
-		{
-			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM)
-			{
-				int[] loc = new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)};
-				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
-				return buildUnit(5, loc[0], loc[1]);
-			}
-			return attack(atk[0], atk[1]);
-		}
 
 		// Update numPilgrims and castle deaths
 		for (int i = 0; i < 3; i++) {
@@ -222,17 +210,31 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			log("Turn: " + me.turn + ". Global population: " + numPilgrims);
 		}
+		
+		// Defend if under attack
+		int[] atk = autoAttack();
+		if(atk != null)
+		{
+			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM)
+			{
+				int[] loc = new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)};
+				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
+				return buildUnit(5, loc[0], loc[1]);
+			}
+			
+			return attack(atk[0], atk[1]);
+		}
 
-		// Stop if you got no resources
-		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 5 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
+		// Stop if you got no resources (leave enough resources to comm and for other pilgrims to mine too)
+		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + numPilgrims + 2 || karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
 		{
 			return null;
 		}
 
-		// If there's enough pilgrims and some extra fuel, build a prophet.
+		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
 		if(numPilgrims >= numOfMines)
 		{
-			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 100 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numPilgrims * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
 				int[] loc = randomAdjSq();
 				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
@@ -296,7 +298,7 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				int dx = nextMove[0] - me.x;
 				int dy = nextMove[1] - me.y;
-				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3)
+				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 5) // leave fuel for some mining
 				{
 					locInPath += 1;
 					return move(dx, dy);
@@ -314,7 +316,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (currentPath == null)
 			{
 				log("Pilgrim BFS returned null.");
-				if(fuel >= 10)
+				if(fuel >= 10) // leave fuel for mining
 				{
 					int[] move = randomAdjSq();
 					return move(move[0], move[1]);
@@ -328,7 +330,8 @@ public class MyRobot extends BCAbstractRobot {
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
-			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3) {
+			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 5) // leave fuel for some mining
+			{
 				locInPath += 1;
 				return move(dx, dy);
 			}
@@ -363,7 +366,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
-		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 3)
+		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + 5) // leave fuel for some mining
 		{
 			locInPath += 1;
 			return move(dx, dy);
