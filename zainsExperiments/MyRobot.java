@@ -225,9 +225,10 @@ public class MyRobot extends BCAbstractRobot {
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
-			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM)
+			int[] loc = availAdjSq(new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)});
+			
+			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM && loc != null)
 			{
-				int[] loc = new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)};	 //MAKE SURE YOU CAN ACTUALLY SPAWN THEM!!!!!
 				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
 				return buildUnit(5, loc[0], loc[1]);
 			}
@@ -1187,6 +1188,54 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
+	private int[] availAdjSq(int[] target)
+	{
+		int i;
+		if(target[0] == 0)
+		{
+			i = target[1] * -2 + 2;
+		}
+		else if(target[0] == -1)
+		{
+			i = target[1] * -1 + 2;
+		}
+		else if(target[0] == 1)
+		{
+			i = target[1] + 6;
+		}
+		else // NOTE: THIS WILL NOT CATCH ALL INVALID TARGETS, ONLY INVALID TARGET[0]S
+		{
+			log("That is not a valid target for availAdjSq(). Returning null.");
+			return null;
+		}
+		
+		int newX = me.x + adjacentSpaces[i][0];
+		int newY = me.y + adjacentSpaces[i][1];
+
+		int delta = 1;
+		int sign = 1;
+		
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0)
+		{
+			if(delta >= 8)
+			{
+				log("No adjacent movable spaces (from availAdjSq()).");
+				return null;
+			}
+			
+			i += delta * sign;
+			i %= 8;
+			
+			newX = me.x + adjacentSpaces[i][0];
+			newY = me.y + adjacentSpaces[i][1];
+			
+			delta += 1;
+			sign *= -1;
+		}
+		
+		return adjacentSpaces[i];
+	}
+	
 	private int[] randomAdjSq()
 	{
 		int rand, newX, newY;
@@ -1202,7 +1251,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(i > 8)
 			{
-				log("No adjacent movable spaces");
+				log("No adjacent movable spaces (from randomAdjSq()).");
 				return null;
 			}
 		}
