@@ -1397,7 +1397,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(i >= 8)
 			{
-				log("No adjacent movable spaces (from randomAdjSq()).");
+//				log("No adjacent movable spaces (from randomAdjSq()).");
 				return null;
 			}
 		}
