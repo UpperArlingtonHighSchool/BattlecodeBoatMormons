@@ -97,6 +97,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
+			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 
 			sortedCastleIDs = Arrays.copyOf(castleIDs, 3);
 			sortcastleIDs();
@@ -284,6 +285,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			getAllCastleLocs();
 			getEnemyCastleLocs();
+			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 		}
 
 		Robot castle = null; // Determine whether adjacent to a castle
@@ -400,6 +402,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			getAllCastleLocs();
 			getEnemyCastleLocs();
+			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 		}
 
 		return null;
@@ -411,6 +414,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			getAllCastleLocs();
 			getEnemyCastleLocs();
+			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 		}
 
 		int[] atk = autoAttack();
@@ -434,6 +438,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			getAllCastleLocs();
 			getEnemyCastleLocs();
+			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 		}
 
 		AttackAction atk = preacherAttack();
@@ -477,8 +482,6 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-		
-		pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
 	}
 
 	private boolean getReflDir() // set hRefl
@@ -1256,7 +1259,7 @@ public class MyRobot extends BCAbstractRobot {
 			i++;
 			newX = me.x + adjacentSpaces[rand][0];
 			newY = me.y + adjacentSpaces[rand][1];
-			
+
 			if(i >= 8)
 			{
 				log("No adjacent movable spaces (from randomAdjSq()).");
