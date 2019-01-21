@@ -658,7 +658,7 @@ public class MyRobot extends BCAbstractRobot {
 		int[] ans = new int[] { 0, 0 };
 		for (int x = 0; x < fullMap[0].length; x++) {
 			looping: for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE) {
+				if (fullMap[y][x] == FUEL) {
 					int[] temp = new int[] { x, y };
 					for (int[] out : fuelsInUse) {
 						if (out[0] == temp[0] && out[1] == temp[1]) {
