@@ -32,6 +32,8 @@ public class MyRobot extends BCAbstractRobot {
 	private int ourDeadCastles = 0;
 	private int[][] castleLocs = new int[3][2]; // {{x, y}, {x, y}, {x, y}}
 	private int globalMinusLocalTurn;
+	private int[] sentryPoint;
+	private boolean sentrying;
 
 	// for castles
 	private int[] numUnits = new int[] {0, 0, 0, 0, 0};
@@ -418,6 +420,8 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
+			chooseSentryPoint();
+			sentrying = false;
 		}
 
 		int[] atk = autoAttack();
@@ -432,18 +436,12 @@ public class MyRobot extends BCAbstractRobot {
 				return null;
 			}
 		}
-
+		
 		if(me.turn + globalMinusLocalTurn > 400)
 		{
 			updateTargetCastle();
 
 			if (currentPath == null)
-			{
-				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
-			}
-
-			int[] loc = currentPath.get(locInPath);
-			if(robotMap[loc[1]][loc[0]] > 0)
 			{
 				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
@@ -465,26 +463,101 @@ public class MyRobot extends BCAbstractRobot {
 					return null;
 				}
 			}
-
-			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
-			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+			
+			int[] loc = currentPath.get(locInPath);
+			if(robotMap[loc[1]][loc[0]] > 0)
 			{
-				locInPath += 1;
-				return move(mov[0], mov[1]);
+				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
-			else
+			
+			if (currentPath == null)
 			{
-				return null;
+				log("Prophet BFS returned null.");
+				if(fuel >= pilgrimLim * 2) // leave fuel for mining
+				{
+					int[] mov = randomAdjSq();
+
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+				}
+				else
+				{
+					return null;
+				}
 			}
 		}
 		else
 		{
-			int[] mov = randomAdjSq();
-			if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
+			if(!sentrying)
 			{
-				return move(mov[0], mov[1]);
+				if(me.x == sentryPoint[0] && me.y == sentryPoint[1])
+				{
+					sentrying = true;
+					return null;
+				}
+				
+				if (currentPath == null)
+				{
+					currentPath = bfsCooties(sentryPoint[0], sentryPoint[1]);
+				}
+
+				if (currentPath == null)
+				{
+					log("Prophet BFS returned null.");
+					if(fuel >= pilgrimLim * 2) // leave fuel for mining
+					{
+						int[] mov = randomAdjSq();
+
+						if(mov != null)
+						{
+							return move(mov[0], mov[1]);
+						}
+					}
+					else
+					{
+						return null;
+					}
+				}
+				
+				int[] loc = currentPath.get(locInPath);
+				if(robotMap[loc[1]][loc[0]] > 0)
+				{
+					currentPath = bfsCooties(sentryPoint[0], sentryPoint[1]);
+				}
+
+				if (currentPath == null)
+				{
+					log("Prophet BFS returned null.");
+					if(fuel >= pilgrimLim * 2) // leave fuel for mining
+					{
+						int[] mov = randomAdjSq();
+
+						if(mov != null)
+						{
+							return move(mov[0], mov[1]);
+						}
+					}
+					else
+					{
+						return null;
+					}
+				}
+			}
+			else
+			{
+				return null;	
 			}
 		}
+
+		int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};	
+		if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+		{
+			locInPath += 1;
+			return move(mov[0], mov[1]);
+		}		
+
 		return null;
 	}
 
@@ -496,25 +569,28 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
+			chooseSentryPoint();
+			sentrying = false;
 		}
 
-		AttackAction atk = preacherAttack();
+		int[] atk = autoAttack();
 		if(atk != null)
 		{
-			return atk;
+			if(fuel >= 25)
+			{
+				return attack(atk[0], atk[1]);
+			}
+			else
+			{
+				return null;
+			}
 		}
-
+		
 		if(me.turn + globalMinusLocalTurn > 400)
 		{
 			updateTargetCastle();
 
 			if (currentPath == null)
-			{
-				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
-			}
-
-			int[] loc = currentPath.get(locInPath);
-			if(robotMap[loc[1]][loc[0]] > 0)
 			{
 				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
@@ -536,26 +612,100 @@ public class MyRobot extends BCAbstractRobot {
 					return null;
 				}
 			}
-
-			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
-			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+			
+			int[] loc = currentPath.get(locInPath);
+			if(robotMap[loc[1]][loc[0]] > 0)
 			{
-				locInPath += 1;
-				return move(mov[0], mov[1]);
+				currentPath = bfsCooties(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
-			else
+			
+			if (currentPath == null)
 			{
-				return null;
+				log("Prophet BFS returned null.");
+				if(fuel >= pilgrimLim * 2) // leave fuel for mining
+				{
+					int[] mov = randomAdjSq();
+
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+				}
+				else
+				{
+					return null;
+				}
 			}
 		}
 		else
 		{
-			int[] mov = randomAdjSq();
-			if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
+			if(!sentrying)
 			{
-				return move(mov[0], mov[1]);
+				if(me.x == sentryPoint[0] && me.y == sentryPoint[1])
+				{
+					sentrying = true;
+					return null;
+				}
+				
+				if (currentPath == null)
+				{
+					currentPath = bfsCooties(sentryPoint[0], sentryPoint[1]);
+				}
+
+				if (currentPath == null)
+				{
+					log("Prophet BFS returned null.");
+					if(fuel >= pilgrimLim * 2) // leave fuel for mining
+					{
+						int[] mov = randomAdjSq();
+
+						if(mov != null)
+						{
+							return move(mov[0], mov[1]);
+						}
+					}
+					else
+					{
+						return null;
+					}
+				}
+				
+				int[] loc = currentPath.get(locInPath);
+				if(robotMap[loc[1]][loc[0]] > 0)
+				{
+					currentPath = bfsCooties(sentryPoint[0], sentryPoint[1]);
+				}
+
+				if (currentPath == null)
+				{
+					log("Prophet BFS returned null.");
+					if(fuel >= pilgrimLim * 2) // leave fuel for mining
+					{
+						int[] mov = randomAdjSq();
+
+						if(mov != null)
+						{
+							return move(mov[0], mov[1]);
+						}
+					}
+					else
+					{
+						return null;
+					}
+				}
+			}
+			else
+			{
+				return null;	
 			}
 		}
+
+		int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};	
+		if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+		{
+			locInPath += 1;
+			return move(mov[0], mov[1]);
+		}		
 
 		return null;
 	}
@@ -1451,5 +1601,18 @@ public class MyRobot extends BCAbstractRobot {
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
 
 		return adjacentSpaces[rand];
+	}
+	
+
+	private void chooseSentryPoint()
+	{
+		if(hRefl)
+		{
+			sentryPoint = new int[] {(int) Math.floor(Math.random() * fullMap.length / 4) + ((me.x > fullMap.length / 2) ? ((int) Math.floor((fullMap.length + 1) * .75)): 0), (int) Math.floor(Math.random() * fullMap.length)};
+		}
+		else
+		{
+			sentryPoint = new int[] {(int) Math.floor(Math.random() * fullMap.length), (int) Math.floor(Math.random() * fullMap.length / 4) + ((me.y > fullMap.length / 2) ? ((int) Math.floor((fullMap.length + 1) * .75)): 0)};
+		}
 	}
 }
