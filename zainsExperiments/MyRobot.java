@@ -111,12 +111,12 @@ public class MyRobot extends BCAbstractRobot {
 				int tm = (me.team * 2 - 1);
 				int offer = lastOffer[me.team][0] * tm;
 
-				if(offer == 0)
+				if (offer == 0)
 				{
 					castleErrorsCatalogued = 0;
 					return proposeTrade(((encodedLocErrors[0] << 2) + getCastleNum(0) + 1) * tm, 0);
 				}
-				else if(offer < 32) // will actually range from 1 to 31, interestingly enough
+				else if (offer < 32) // will actually range from 1 to 31, interestingly enough
 				{
 					castleErrorsCatalogued = 1;
 					encodedLocErrors[(offer - 1) % 4] = ((offer - 1) >> 2);
@@ -383,6 +383,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		currentPath = bfs(location[0], location[1]); // Actually go there
 		if (currentPath == null) {
+			log("Pilgrim BFS returned null. 2");
 			return null;
 		}
 		int[] nextMove = currentPath.get(locInPath);
