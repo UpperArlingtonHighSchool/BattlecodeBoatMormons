@@ -479,7 +479,11 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else
 		{
-			
+			int[] mov = randomAdjSq();
+			if(mov != null && fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * 6)
+			{
+				return move(mov[0], mov[1]);
+			}
 		}
 		return null;
 	}
