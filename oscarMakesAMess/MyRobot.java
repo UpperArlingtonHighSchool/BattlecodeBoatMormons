@@ -13,6 +13,10 @@ public class MyRobot extends BCAbstractRobot {
 	private int numUnits = 0;
 	private int numMines = 0;
 	private int numCastles = 0;
+	private int myMineScore;
+	private ArrayList<int[]> allKarbos = new ArrayList<>();
+	private ArrayList<int[]> allFuels = new ArrayList<>();
+	private ArrayList<Integer> fuelMineScores = new ArrayList<>();
 	private ArrayList<int[]> karbosInUse = new ArrayList<>();
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>();
 	private ArrayList<int[]> currentPath = new ArrayList<>();
@@ -32,6 +36,8 @@ public class MyRobot extends BCAbstractRobot {
 	public Action turn() {
 		if (me.turn == 1) {
 			getFullMap();
+			getMineSpots();
+			getMineScores();
 		}
 		robotMap = getVisibleRobotMap();
 		switch (me.unit) {
@@ -62,35 +68,38 @@ public class MyRobot extends BCAbstractRobot {
 					numCastles += 1;
 				}
 			}
+
+			myMineScore = fuelMineScores.get(allFuels.indexOf(findClosestFuel()));
 		}
-		for (int i = 0; i < numCastles; i++) {
-			int castleID = castleIDs[i];
-			if (castleID == -1) {
-				continue;
+		/*
+		 * for (int i = 0; i < numCastles; i++) { int castleID = castleIDs[i]; if
+		 * (castleID == -1) { continue; } Robot castle = getRobot(castleID); if (castle
+		 * == null) { castleIDs[i] = -1; continue; } numUnits += castle.castle_talk; }
+		 * log("global population: " + numUnits); boolean haveNeighbors = false; for
+		 * (int[] move : adjacentSpaces) { int tryX = me.x + move[0]; int tryY = me.y +
+		 * move[1]; if (tryX <= -1 || tryX >= fullMap[0].length || tryY <= -1 || tryY >=
+		 * fullMap.length) { continue; } if (robotMap[tryY][tryX] > 0) { haveNeighbors =
+		 * true; break; } } if (haveNeighbors) { signal(numUnits, 2); }
+		 */
+
+		if (numUnits < myMineScore) {
+			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+				return null;
 			}
-			Robot castle = getRobot(castleID);
-			if (castle == null) {
-				castleIDs[i] = -1;
-				continue;
+			for (int[] move : adjacentSpaces) {
+				int buildX = me.x + move[0];
+				int buildY = me.y + move[1];
+				if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
+						|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
+					continue;
+				}
+				numUnits++;
+				signal(64 * me.y + me.x, 2);
+				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
-			numUnits += castle.castle_talk;
 		}
-		log("global population: " + numUnits);
-		boolean haveNeighbors = false;
-		for (int[] move : adjacentSpaces) {
-			int tryX = me.x + move[0];
-			int tryY = me.y + move[1];
-			if (tryX <= -1 || tryX >= fullMap[0].length || tryY <= -1 || tryY >= fullMap.length) {
-				continue;
-			}
-			if (robotMap[tryY][tryX] > 0) {
-				haveNeighbors = true;
-				break;
-			}
-		}
-		if (haveNeighbors) {
-			signal(numUnits, 2);
-		}
+
 		if (numUnits >= numMines || fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
@@ -103,8 +112,6 @@ public class MyRobot extends BCAbstractRobot {
 				continue;
 			}
 			numUnits++;
-			// signal(numUnits, 2);
-			castleTalk(1);
 			return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 		}
 		return null;
@@ -180,7 +187,7 @@ public class MyRobot extends BCAbstractRobot {
 			location = HOME;
 		}
 
-		currentPath = bfsCooties(location[0], location[1]);
+		currentPath = bfs(location[0], location[1]);
 		if (currentPath == null) {
 			return null;
 		}
@@ -251,30 +258,23 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] findClosestKarbo() {
 		int minDistance = fullMap.length * fullMap.length;
 		int[] ans = null;
-		for (int x = 0; x < fullMap[0].length; x++) {
-			looping: for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE) {
-					int[] temp = new int[] { x, y };
-					for (int[] out : karbosInUse) {
-						if (out[0] == temp[0] && out[1] == temp[1]) {
-							if (robotMap[y][x] == 0) {
-								karbosInUse.remove(out);
-							} else {
-								continue looping;
-							}
-						}
-					}
-					if (robotMap[y][x] > 0) {
-						karbosInUse.add(temp);
-						continue looping;
-					}
-					int dx = x - me.x;
-					int dy = y - me.y;
-					if (dx * dx + dy * dy < minDistance) {
-						ans = temp;
-						minDistance = dx * dx + dy * dy;
-					}
+
+		for (int[] spot : allKarbos) {
+			if (karbosInUse.contains(spot)) {
+				if (robotMap[spot[1]][spot[0]] == 0) {
+					karbosInUse.remove(spot);
 				}
+				continue;
+			}
+			if (robotMap[spot[1]][spot[0]] > 0) {
+				karbosInUse.add(spot);
+				continue;
+			}
+			int dx = spot[0] - me.x;
+			int dy = spot[1] - me.y;
+			if (dx * dx + dy * dy < minDistance) {
+				ans = spot;
+				minDistance = dx * dx + dy * dy;
 			}
 		}
 		return ans;
@@ -283,33 +283,106 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] findClosestFuel() {
 		int minDistance = fullMap.length * fullMap.length;
 		int[] ans = null;
-		for (int x = 0; x < fullMap[0].length; x++) {
-			looping: for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE) {
-					int[] temp = new int[] { x, y };
-					for (int[] out : fuelsInUse) {
-						if (out[0] == temp[0] && out[1] == temp[1]) {
-							if (robotMap[y][x] == 0) {
-								fuelsInUse.remove(out);
-							} else {
-								continue looping;
-							}
-						}
-					}
-					if (robotMap[y][x] > 0) {
-						fuelsInUse.add(temp);
-						continue looping;
-					}
-					int dx = x - me.x;
-					int dy = y - me.y;
-					if (dx * dx + dy * dy < minDistance) {
-						ans = temp;
-						minDistance = dx * dx + dy * dy;
-					}
+
+		for (int[] spot : allFuels) {
+			if (fuelsInUse.contains(spot)) {
+				if (robotMap[spot[1]][spot[0]] == 0) {
+					fuelsInUse.remove(spot);
 				}
+				continue;
+			}
+			if (robotMap[spot[1]][spot[0]] > 0) {
+				fuelsInUse.add(spot);
+				continue;
+			}
+			int dx = spot[0] - me.x;
+			int dy = spot[1] - me.y;
+			if (dx * dx + dy * dy < minDistance) {
+				ans = spot;
+				minDistance = dx * dx + dy * dy;
 			}
 		}
 		return ans;
+	}
+
+	private int[] findClosestMine() {
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans = null;
+
+		for (int[] spot : allFuels) {
+			if (fuelsInUse.contains(spot)) {
+				if (robotMap[spot[1]][spot[0]] == 0) {
+					fuelsInUse.remove(spot);
+				}
+				continue;
+			}
+			if (robotMap[spot[1]][spot[0]] > 0) {
+				fuelsInUse.add(spot);
+				continue;
+			}
+			int dx = spot[0] - me.x;
+			int dy = spot[1] - me.y;
+			if (dx * dx + dy * dy < minDistance) {
+				ans = spot;
+				minDistance = dx * dx + dy * dy;
+			}
+		}
+		for (int[] spot : allKarbos) {
+			if (karbosInUse.contains(spot)) {
+				if (robotMap[spot[1]][spot[0]] == 0) {
+					karbosInUse.remove(spot);
+				}
+				continue;
+			}
+			if (robotMap[spot[1]][spot[0]] > 0) {
+				karbosInUse.add(spot);
+				continue;
+			}
+			int dx = spot[0] - me.x;
+			int dy = spot[1] - me.y;
+			if (dx * dx + dy * dy < minDistance) {
+				ans = spot;
+				minDistance = dx * dx + dy * dy;
+			}
+		}
+		return ans;
+	}
+
+	// updates {x, y} of all karbonite and fuel into iterable arraylists
+	// call this on turn 1 after getFullMap
+	private void getMineSpots() {
+		for (int x = 0; x < fullMap[0].length; x++) {
+			for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == KARBONITE) {
+					allKarbos.add(new int[] { x, y });
+				} else if (fullMap[y][x] == FUEL) {
+					allFuels.add(new int[] { x, y });
+				}
+			}
+		}
+	}
+
+	// call this on turn 1 after getMineSpots
+	private void getMineScores() {
+		for (int[] fuel : allFuels) {
+			int count = 0;
+			for (int dx = -2; dx <= 2; dx++) {
+				int checkX = fuel[0] + dx;
+				if (checkX <= -1 || checkX >= fullMap[0].length) {
+					continue;
+				}
+				for (int dy = -2; dy <= 2; dy++) {
+					int checkY = fuel[1] + dy;
+					if (checkY <= -1 || checkY >= fullMap.length) {
+						continue;
+					}
+					if (fullMap[checkY][checkX] > PASSABLE) {
+						count++;
+					}
+				}
+			}
+			fuelMineScores.add(count);
+		}
 	}
 
 	// bfs is reaaaally fast now
@@ -384,7 +457,7 @@ public class MyRobot extends BCAbstractRobot {
 	private boolean spaceIsCootiesFree(int x, int y) {
 		for (int[] adj : adjacentSpaces) {
 			if (y + adj[1] > -1 && y + adj[1] < robotMap.length && x + adj[0] > -1 && x + adj[0] < robotMap.length) {
-				int robotID = robotMap[y+adj[1]][x+adj[0]];
+				int robotID = robotMap[y + adj[1]][x + adj[0]];
 				if (robotID == -1 || robotID == me.id) {
 					continue;
 				}
