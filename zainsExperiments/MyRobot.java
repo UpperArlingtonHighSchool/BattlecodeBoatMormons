@@ -1532,7 +1532,7 @@ public class MyRobot extends BCAbstractRobot {
 			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
 			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
 
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && getVisibleRobotMap()[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && getVisibleRobotMap()[newY][newX] <= 0)
 			{
 				return adjacentSpaces[(castleDir + dir) % 8];
 			}
@@ -1542,7 +1542,7 @@ public class MyRobot extends BCAbstractRobot {
 			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
 			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
 
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && getVisibleRobotMap()[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && getVisibleRobotMap()[newY][newX] <= 0)
 			{
 				return adjacentSpaces[(castleDir + dir) % 8];
 			}
@@ -1556,7 +1556,7 @@ public class MyRobot extends BCAbstractRobot {
 				newX = me.x + adjacentSpaces[(castleDir + dir - 2) % 8][0];
 				newY = me.y + adjacentSpaces[(castleDir + dir - 2) % 8][1];
 
-				if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && getVisibleRobotMap()[newY][newX] <= 0)
+				if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && getVisibleRobotMap()[newY][newX] <= 0)
 				{
 					return adjacentSpaces[(castleDir + dir - 2) % 8];
 				}
