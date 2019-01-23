@@ -39,6 +39,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int numKarbMines = 0;
 	private int pilgrimLim;
 	private int[] castleIDs = new int[] {-1, -1, -1}; // small so we don't worry about if there's only 1 or 2 castles
+	private int numBuilders;
 
 	// For pilgrims
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
@@ -48,6 +49,10 @@ public class MyRobot extends BCAbstractRobot {
 	private ArrayList<int[]> currentPath = null;
 	private int locInPath;
 	private int home; // index of home castle
+
+	// For lattice
+	private int castleDir;
+	private int timesMoved = 0;
 
 	// For attacking
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 2, 1};
@@ -99,6 +104,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
+			numBuilders = numCastles;
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 
 			sortedCastleIDs = Arrays.copyOf(castleIDs, 3);
@@ -251,14 +257,28 @@ public class MyRobot extends BCAbstractRobot {
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
 		if(numUnits[1] >= pilgrimLim)
 		{
-			if(me.turn < 300 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+			if(me.turn < 850 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 			{
-				int[] loc = randomAdjSq();
-				if(loc != null)
+				int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
+				// This is so all castles and churches build about the same amount.
+				if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * numBuilders + 2 + numUnits[1] * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * numCastles)
 				{
-					sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
-					castleTalk(4);
-					return buildUnit(4, loc[0], loc[1]);
+					doit = 0;
+				}
+				else
+				{
+					doit = (int) (Math.random() * numBuilders);
+				}
+				
+				if(doit == 0)
+				{
+					int[] loc = randomEvenAdjSq();
+					if(loc != null)
+					{
+						sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
+						castleTalk(4);
+						return buildUnit(4, loc[0], loc[1]);
+					}
 				}
 			}
 
@@ -419,6 +439,7 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
+			getCastleDir();
 		}
 
 		int[] atk = autoAttack();
@@ -434,7 +455,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if(me.turn + globalMinusLocalTurn > 400)
+		if(me.turn + globalMinusLocalTurn >= 850)
 		{
 			updateTargetCastle();
 
@@ -474,13 +495,21 @@ public class MyRobot extends BCAbstractRobot {
 				return move(mov[0], mov[1]);
 			}
 			else
-			{
+			{	
 				return null;
 			}
 		}
 		else
 		{
-			
+			if(fuel >= pilgrimLim * 2 && me.turn >= timesMoved * timesMoved * 2)
+			{
+				int[] mov = moveAwayFromCastle();
+				if(mov != null)
+				{
+					timesMoved += 1;
+					return move(mov[0], mov[1]);
+				}
+			}
 		}
 		return null;
 	}
@@ -1441,12 +1470,102 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(i >= 8)
 			{
-//				log("No adjacent movable spaces (from randomAdjSq()).");
+				//				log("No adjacent movable spaces (from randomAdjSq()).");
 				return null;
 			}
 		}
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
 
 		return adjacentSpaces[rand];
+	}
+
+	private int[] randomEvenAdjSq()
+	{
+		int rand, newX, newY;
+		int pos = 1 - (me.x + me.y) % 2;
+
+		rand = ((int) (Math.random() * 4)) * 2 + pos;
+		int i = 0;
+		do
+		{
+			rand += 2;
+			rand %= 8;
+			i++;
+			newX = me.x + adjacentSpaces[rand][0];
+			newY = me.y + adjacentSpaces[rand][1];
+
+			if(i >= 4)
+			{
+				//				log("No even adjacent movable spaces (from randomEvenAdjSq()).");
+				return null;
+			}
+		}
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
+
+		return adjacentSpaces[rand];
+	}
+
+	private void getCastleDir()
+	{
+		if(castleLocs[0][0] - me.x == 0)
+		{
+			castleDir = castleLocs[0][1] - me.y * -2 + 2;
+		}
+		else if(castleLocs[0][0] - me.x == -1)
+		{
+			castleDir = castleLocs[0][1] - me.y * -1 + 2;
+		}
+		else if(castleLocs[0][0] - me.x == 1)
+		{
+			castleDir = castleLocs[0][1] - me.y + 6;
+		}
+	}
+
+	private int[] moveAwayFromCastle()
+	{
+		int newX, newY;
+
+		if(castleDir % 2 == 0)
+		{
+			int dir = ((int) (Math.random() * 2)) * 2 - 1;
+
+			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
+			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
+
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && getVisibleRobotMap()[newY][newX] <= 0)
+			{
+				return adjacentSpaces[(castleDir + dir) % 8];
+			}
+
+			dir *= -1;
+
+			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
+			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
+
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && getVisibleRobotMap()[newY][newX] <= 0)
+			{
+				return adjacentSpaces[(castleDir + dir) % 8];
+			}
+		}
+		else
+		{
+			int dir = ((int) (Math.random() * 3)) * 2;
+
+			for(int i = 0; i < 3; i++)
+			{
+				newX = me.x + adjacentSpaces[(castleDir + dir - 2) % 8][0];
+				newY = me.y + adjacentSpaces[(castleDir + dir - 2) % 8][1];
+
+				if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && getVisibleRobotMap()[newY][newX] <= 0)
+				{
+					return adjacentSpaces[(castleDir + dir - 2) % 8];
+				}
+
+				dir += 2;
+				dir %= 4;
+			}
+		}
+
+		return null;
 	}
 }
