@@ -12,11 +12,15 @@ public class MyRobot extends BCAbstractRobot {
 	private int left;
 	private int numUnits = 0;
 	private int numMines = 0;
+	private int numKarbos = 0;
+	private int numFuels = 0;
 	private int numCastles = 0;
 	private int myMineScore;
-	private ArrayList<int[]> allKarbos = new ArrayList<>();
-	private ArrayList<int[]> allFuels = new ArrayList<>();
-	private ArrayList<Integer> fuelMineScores = new ArrayList<>();
+	private int[][] allKarbos;
+	private int[][] allFuels;
+	private int[] fuelMineScores;
+	private int currentColonization;
+	private boolean[] isMineColonized;
 	private ArrayList<int[]> karbosInUse = new ArrayList<>();
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>();
 	private ArrayList<int[]> currentPath = new ArrayList<>();
@@ -69,19 +73,36 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-			myMineScore = fuelMineScores.get(allFuels.indexOf(findClosestFuel()));
+			int[] myMine = findClosestFuel();
+			for (int i = 0; i < allFuels.length; i++) {
+				if (allFuels[i] == myMine) {
+					// log("found my mine");
+					myMineScore = fuelMineScores[i];
+					currentColonization = i;
+					isMineColonized[i] = true;
+				}
+			}
+		}
+
+		for (int i = 0; i < numCastles; i++) {
+			int castleID = castleIDs[i];
+			if (castleID == -1) {
+				continue;
+			}
+			Robot castle = getRobot(castleID);
+			if (castle == null) {
+				castleIDs[i] = -1;
+				continue;
+			}
+			isMineColonized[castle.castle_talk] = true;
 		}
 		/*
-		 * for (int i = 0; i < numCastles; i++) { int castleID = castleIDs[i]; if
-		 * (castleID == -1) { continue; } Robot castle = getRobot(castleID); if (castle
-		 * == null) { castleIDs[i] = -1; continue; } numUnits += castle.castle_talk; }
 		 * log("global population: " + numUnits); boolean haveNeighbors = false; for
 		 * (int[] move : adjacentSpaces) { int tryX = me.x + move[0]; int tryY = me.y +
 		 * move[1]; if (tryX <= -1 || tryX >= fullMap[0].length || tryY <= -1 || tryY >=
 		 * fullMap.length) { continue; } if (robotMap[tryY][tryX] > 0) { haveNeighbors =
 		 * true; break; } } if (haveNeighbors) { signal(numUnits, 2); }
 		 */
-
 		if (numUnits < myMineScore) {
 			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
 					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
@@ -95,7 +116,10 @@ public class MyRobot extends BCAbstractRobot {
 					continue;
 				}
 				numUnits++;
+				log("castle is signalling their location at " + (64 * me.y + me.x));
 				signal(64 * me.y + me.x, 2);
+				log("castle is singalling something else");
+				castleTalk(currentColonization);
 				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
 		}
@@ -104,24 +128,41 @@ public class MyRobot extends BCAbstractRobot {
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
 		}
-		for (int[] move : adjacentSpaces) {
-			int buildX = me.x + move[0];
-			int buildY = me.y + move[1];
-			if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
-					|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
+
+		for (int i = 0; i < allFuels.length; i++) {
+			if (isMineColonized[i]) {
 				continue;
 			}
-			numUnits++;
-			return buildUnit(SPECS.PILGRIM, move[0], move[1]);
+			for (int[] adj : adjacentSpaces) {
+				int freeX = allFuels[i][0] + adj[0];
+				int freeY = allFuels[i][1] + adj[1];
+				if (freeX <= -1 || freeX >= fullMap[0].length || freeY <= -1 || freeY >= fullMap.length
+						|| fullMap[freeY][freeX] != PASSABLE || robotMap[freeY][freeX] > 0) {
+					continue;
+				}
+				currentColonization = i;
+				isMineColonized[i] = true;
+				for (int[] move : adjacentSpaces) {
+					int buildX = me.x + move[0];
+					int buildY = me.y + move[1];
+					if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
+							|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
+						continue;
+					}
+					numUnits++;
+					log("signalling colonization spot at " + (64 * freeY + freeX));
+					signal(64 * freeY + freeX, 2);
+					log("signalling something else");
+					castleTalk(currentColonization);
+					return buildUnit(SPECS.PILGRIM, move[0], move[1]);
+				}
+			}
 		}
 		return null;
 	}
 
 	private Action pilgrimAction() {
-		if (me.turn == 1) {
-			HOME = new int[] { me.x, me.y };
-		}
-		Robot castle = null;
+		Robot base = null;
 		for (int[] move : adjacentSpaces) {
 			int testX = me.x + move[0];
 			int testY = me.y + move[1];
@@ -129,12 +170,14 @@ public class MyRobot extends BCAbstractRobot {
 				continue;
 			}
 			Robot maybe = getRobot(robotMap[testY][testX]);
-			if (robotMap[testY][testX] > 0 && maybe.unit == SPECS.CASTLE && maybe.team == me.team) {
-				castle = maybe;
+			if (robotMap[testY][testX] > 0 && (maybe.unit == SPECS.CASTLE || maybe.unit == SPECS.CHURCH)
+					&& maybe.team == me.team) {
+				base = maybe;
 				karbosInUse.clear();
 				fuelsInUse.clear();
-				if (isRadioing(castle)) {
-					numUnits = castle.signal;
+				if (me.turn == 1 && isRadioing(base)) {
+					HOME = new int[] { base.signal % 64, (int) (base.signal / 64) };
+					break;
 				}
 			}
 		}
@@ -153,34 +196,58 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
-			if (castle != null) {
-				return give(castle.x - me.x, castle.y - me.y, me.karbonite, me.fuel);
+			if (base != null) {
+				return give(base.x - me.x, base.y - me.y, me.karbonite, me.fuel);
 			}
-
-			currentPath = bfsCooties(HOME[0], HOME[1]);
+			log("gary go from (" + me.x + ", " + me.y + ") to (" + HOME[0] + ", " + HOME[1] + ")");
+			currentPath = bfs(HOME[0], HOME[1]);
+			log("gary found home");
 			if (currentPath == null) {
 				return null;
 			}
 			int[] nextMove = currentPath.get(0);
+			log("gary baby steps");
 			int dx = nextMove[0] - me.x;
+			log("gary dxed");
 			int dy = nextMove[1] - me.y;
 			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
 				currentPath.remove(0);
+				log("gary going home");
 				return move(dx, dy);
 			}
+			log("gary no go");
 			return null;
 		}
-		if (fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) {
+		if ((fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) && robotMap[HOME[1]][HOME[0]] > 0) {
 			if (fuel == 0) {
 				return null;
 			}
 			return mine();
 		}
 		int[] location;
-		if (20 * numUnits > fuel) {
-			location = findClosestFuel();
-		} else {
-			location = findClosestKarbo();
+		if (robotMap[HOME[1]][HOME[0]] > 0) {
+			/*
+			if (20 * numUnits > fuel) {
+				location = findClosestFuel();
+			} else {
+				location = findClosestKarbo();
+			}
+			*/
+			location = findClosestMine();
+		}
+
+		else {
+			if (Math.abs(HOME[0] - me.x) + Math.abs(HOME[1] - me.y) == 1) {
+				log("trying to build a church");
+				if (karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE
+						|| fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
+					return null;
+				}
+				log("BUILT A CHURCH");
+				return buildUnit(SPECS.CHURCH, HOME[0] - me.x, HOME[1] - me.y);
+			}
+			robotMap[HOME[1]][HOME[0]] = 4096;
+			location = HOME;
 		}
 
 		if (location == null) {
@@ -218,13 +285,61 @@ public class MyRobot extends BCAbstractRobot {
 				} else if (k[i][j]) {
 					fullMap[i][j] = KARBONITE;
 					numMines++;
+					numKarbos++;
 				} else if (f[i][j]) {
 					fullMap[i][j] = FUEL;
 					numMines++;
+					numFuels++;
 				} else {
 					fullMap[i][j] = PASSABLE;
 				}
 			}
+		}
+	}
+
+	// updates {x, y} of all karbonite and fuel into iterable arraylists
+	// call this on turn 1 after getFullMap
+	private void getMineSpots() {
+		allKarbos = new int[numKarbos][2];
+		allFuels = new int[numFuels][2];
+		int karboIndex = 0;
+		int fuelIndex = 0;
+		for (int x = 0; x < fullMap[0].length; x++) {
+			for (int y = 0; y < fullMap.length; y++) {
+				if (fullMap[y][x] == KARBONITE) {
+					allKarbos[karboIndex][0] = x;
+					allKarbos[karboIndex++][1] = y;
+				} else if (fullMap[y][x] == FUEL) {
+					allFuels[fuelIndex][0] = x;
+					allFuels[fuelIndex++][1] = y;
+				}
+			}
+		}
+	}
+
+	// call this on turn 1 after getMineSpots
+	private void getMineScores() {
+		isMineColonized = new boolean[numFuels];
+		fuelMineScores = new int[numFuels];
+		int index = 0;
+		for (int[] fuel : allFuels) {
+			int count = 0;
+			for (int dx = -2; dx <= 2; dx++) {
+				int checkX = fuel[0] + dx;
+				if (checkX <= -1 || checkX >= fullMap[0].length) {
+					continue;
+				}
+				for (int dy = -2; dy <= 2; dy++) {
+					int checkY = fuel[1] + dy;
+					if (checkY <= -1 || checkY >= fullMap.length) {
+						continue;
+					}
+					if (fullMap[checkY][checkX] > PASSABLE) {
+						count++;
+					}
+				}
+			}
+			fuelMineScores[index++] = count;
 		}
 	}
 
@@ -348,43 +463,6 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
-	// updates {x, y} of all karbonite and fuel into iterable arraylists
-	// call this on turn 1 after getFullMap
-	private void getMineSpots() {
-		for (int x = 0; x < fullMap[0].length; x++) {
-			for (int y = 0; y < fullMap.length; y++) {
-				if (fullMap[y][x] == KARBONITE) {
-					allKarbos.add(new int[] { x, y });
-				} else if (fullMap[y][x] == FUEL) {
-					allFuels.add(new int[] { x, y });
-				}
-			}
-		}
-	}
-
-	// call this on turn 1 after getMineSpots
-	private void getMineScores() {
-		for (int[] fuel : allFuels) {
-			int count = 0;
-			for (int dx = -2; dx <= 2; dx++) {
-				int checkX = fuel[0] + dx;
-				if (checkX <= -1 || checkX >= fullMap[0].length) {
-					continue;
-				}
-				for (int dy = -2; dy <= 2; dy++) {
-					int checkY = fuel[1] + dy;
-					if (checkY <= -1 || checkY >= fullMap.length) {
-						continue;
-					}
-					if (fullMap[checkY][checkX] > PASSABLE) {
-						count++;
-					}
-				}
-			}
-			fuelMineScores.add(count);
-		}
-	}
-
 	// bfs is reaaaally fast now
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
 		boolean occupied = false;
@@ -441,7 +519,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			spot = spots.poll();
 			if (spot == null) {
-				// log("exhausted all options");
+				log("BFS exhausted all options");
 				return null;
 			}
 		}
@@ -451,6 +529,7 @@ public class MyRobot extends BCAbstractRobot {
 			int prevSpot = from[spot[1] * fullMap.length + spot[0]];
 			spot = new int[] { prevSpot % fullMap.length, (int) (prevSpot / fullMap.length) };
 		}
+		log("BFS returned " + ans.size() + "-step path");
 		return ans;
 	}
 
