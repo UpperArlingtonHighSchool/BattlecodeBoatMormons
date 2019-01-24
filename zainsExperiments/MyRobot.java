@@ -279,11 +279,10 @@ public class MyRobot extends BCAbstractRobot {
 					{
 						sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
 						castleTalk(4);
-						return buildUnit(5, loc[0], loc[1]); // HERE IT IS
+						return buildUnit(4, loc[0], loc[1]);
 					}
 				}
 			}
-
 			return null;
 		}
 
@@ -457,7 +456,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if(me.turn + globalMinusLocalTurn >= 0)//850)
+		if(me.turn + globalMinusLocalTurn >= 850)
 		{
 			updateTargetCastle();
 
@@ -1169,7 +1168,7 @@ public class MyRobot extends BCAbstractRobot {
 			x = enemyCastleLocs[targetCastle][0] + (int) Math.floor(i / 2);
 			y = enemyCastleLocs[targetCastle][1] + i % 2;
 
-			if(getVisibleRobotMap()[y][x] != 0 && (me.x != x || me.y != y))
+			if(robotMap[y][x] != 0 && (me.x != x || me.y != y))
 			{
 				castleKilled = false;
 			}
@@ -1267,7 +1266,7 @@ public class MyRobot extends BCAbstractRobot {
 	}
 
 	private boolean spaceIsCootiesFree(int x, int y) {
-		int[][] robomap = getVisibleRobotMap();
+		int[][] robomap = robotMap;
 		for (int[] adj : adjacentSpaces) {
 			if (y + adj[1] > -1 && y + adj[1] < robomap.length && x + adj[0] > -1 && x + adj[0] < robomap.length)
 			{
@@ -1376,7 +1375,7 @@ public class MyRobot extends BCAbstractRobot {
 		int delta = 1;
 		int sign = 1;
 
-		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0)
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0)
 		{
 			if(delta >= 8)
 			{
@@ -1416,7 +1415,7 @@ public class MyRobot extends BCAbstractRobot {
 				return null;
 			}
 		}
-		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
 
 		return adjacentSpaces[rand];
 	}
@@ -1442,7 +1441,7 @@ public class MyRobot extends BCAbstractRobot {
 				return null;
 			}
 		}
-		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || getVisibleRobotMap()[newY][newX] > 0);
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
 
 		return adjacentSpaces[rand];
 	}
@@ -1474,7 +1473,7 @@ public class MyRobot extends BCAbstractRobot {
 			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
 			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
 
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && getVisibleRobotMap()[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 			{
 				return adjacentSpaces[(castleDir + dir) % 8];
 			}
@@ -1484,7 +1483,7 @@ public class MyRobot extends BCAbstractRobot {
 			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
 			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
 
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && getVisibleRobotMap()[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 			{
 				return adjacentSpaces[(castleDir + dir) % 8];
 			}
@@ -1498,7 +1497,7 @@ public class MyRobot extends BCAbstractRobot {
 				newX = me.x + adjacentSpaces[(castleDir + dir - 2) % 8][0];
 				newY = me.y + adjacentSpaces[(castleDir + dir - 2) % 8][1];
 
-				if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && getVisibleRobotMap()[newY][newX] <= 0)
+				if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 				{
 					return adjacentSpaces[(castleDir + dir - 2) % 8];
 				}
