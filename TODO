@@ -1,16 +1,7 @@
-- decrease numPilgrims when pilgrims die 
+- decrease numPilgrims when pilgrims die
 
-- Strategy development
-	- develop and over-arching strategy
-	
-- Defend mines
-
-- Test preacherAttack
-
-- findBestMineCluster()
+- Make preachers move
 	
 - Maybe fix locations comms?
 	
 - Add to BFS ability to avoid region (example use: pilgrims don't go w/i range of enemy castle)
-	
-- unimportant: Update function to get reflection direction for edge case that devs will prob. make where map is symmetric both ways except castles

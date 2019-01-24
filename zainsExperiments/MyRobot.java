@@ -44,15 +44,15 @@ public class MyRobot extends BCAbstractRobot {
 	// For pilgrims
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
+	private int home; // index of home castle
 
 	// For pathing
 	private ArrayList<int[]> currentPath = null;
 	private int locInPath;
-	private int home; // index of home castle
 
 	// For lattice
 	private int castleDir;
-	private int timesMoved = 0;
+	private boolean arrived;
 
 	// For attacking
 	private final int[] attackPriority = new int[] {4, 5, 3, 0, 2, 1};
@@ -441,6 +441,7 @@ public class MyRobot extends BCAbstractRobot {
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
 			getCastleDir();
+			arrived = false;
 		}
 
 		int[] atk = autoAttack();
@@ -499,14 +500,9 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else
 		{
-			if(fuel >= pilgrimLim * 2 && me.turn >= timesMoved * timesMoved * 2)
+			if(!arrived)
 			{
-				int[] mov = moveAwayFromCastle();
-				if(mov != null)
-				{
-					timesMoved += 1;
-					return move(mov[0], mov[1]);
-				}
+				
 			}
 		}
 		return null;
