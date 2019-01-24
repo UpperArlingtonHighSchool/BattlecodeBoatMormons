@@ -279,8 +279,8 @@ public class MyRobot extends BCAbstractRobot {
 					if(loc != null)
 					{
 						sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
-						castleTalk(4);
-						return buildUnit(4, loc[0], loc[1]);
+						castleTalk(4 + (me.turn % 4 == 0 ? 1 : 0));
+						return buildUnit(4 + (me.turn % 4 == 0 ? 1 : 0), loc[0], loc[1]);
 					}
 				}
 			}
@@ -511,7 +511,6 @@ public class MyRobot extends BCAbstractRobot {
 				if(mov != null)
 				{
 					arrived = true;
-					log("yay I'm here " + mov);
 					return move(mov[0], mov[1]);
 				}
 
@@ -533,6 +532,11 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
+			getCastleDir();
+			if(castleDir % 2 == 0)
+			{
+				sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
+			}
 		}
 
 		AttackAction atk = preacherAttack();
@@ -541,6 +545,64 @@ public class MyRobot extends BCAbstractRobot {
 			return atk;
 		}
 
+		if(me.turn + globalMinusLocalTurn >= 850)
+		{
+			updateTargetCastle();
+
+			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+			{
+				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+			}
+
+			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+			{
+				log("Prophet BFS returned null (or something invalid).");
+				if(fuel >= pilgrimLim * 2) // leave fuel for mining
+				{
+					int[] mov = randomAdjSq();
+
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+
+					return null;
+				}
+				else
+				{
+					return null;
+				}
+			}
+
+			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+
+			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+			{
+				locInPath += 1;
+				return move(mov[0], mov[1]);
+			}
+			else
+			{	
+				return null;
+			}
+		}
+		else
+		{
+			if(fuel >= pilgrimLim * 2)
+			{
+				int[] mov = latticify();
+				if(mov != null)
+				{
+					return null;
+				}
+
+				mov = exploreLattice();
+				if(mov != null)
+				{
+					return move(mov[0], mov[1]);
+				}
+			}
+		}
 		return null;
 	}
 
@@ -1447,7 +1509,7 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				return null;
 			}
-			
+
 			rand += 2;
 			rand %= 8;
 			newX = me.x + adjacentSpaces[rand][0];
@@ -1550,9 +1612,7 @@ public class MyRobot extends BCAbstractRobot {
 			dir %= 8;
 		}
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
-		
-		log("turn: " + (me.turn + globalMinusLocalTurn) + ". destination: " + newX + " " + newY);
-		
+
 		return adjacentSpaces[(dir - 2) % 8];
 	}
 }
