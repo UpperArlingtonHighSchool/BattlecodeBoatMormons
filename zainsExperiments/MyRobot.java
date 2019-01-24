@@ -52,6 +52,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	// For lattice
 	private int castleDir;
+	private int sideDir;
 	private boolean arrived;
 
 	// For attacking
@@ -274,7 +275,7 @@ public class MyRobot extends BCAbstractRobot {
 
 				if(doit == 0)
 				{
-					int[] loc = randomEvenAdjSq();
+					int[] loc = randomOddAdjSq();
 					if(loc != null)
 					{
 						sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
@@ -441,6 +442,10 @@ public class MyRobot extends BCAbstractRobot {
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
 			getCastleDir();
+			if(castleDir % 2 == 0)
+			{
+				sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
+			}
 			arrived = false;
 		}
 
@@ -500,9 +505,21 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else
 		{
-			if(!arrived)
+			if(!arrived && fuel >= pilgrimLim * 2)
 			{
-				
+				int[] mov = latticify();
+				if(mov != null)
+				{
+					arrived = true;
+					log("yay I'm here " + mov);
+					return move(mov[0], mov[1]);
+				}
+
+				mov = exploreLattice();
+				if(mov != null)
+				{
+					return move(mov[0], mov[1]);
+				}
 			}
 		}
 		return null;
@@ -1062,7 +1079,7 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 		}
-				
+
 		if (bestLocs.get(0)[2] == 0)
 		{
 			return null;
@@ -1416,26 +1433,26 @@ public class MyRobot extends BCAbstractRobot {
 		return adjacentSpaces[rand];
 	}
 
-	private int[] randomEvenAdjSq()
+	private int[] randomOddAdjSq()
 	{
 		int rand, newX, newY;
 		int pos = 1 - (me.x + me.y) % 2;
 
-		rand = ((int) (Math.random() * 4)) * 2 + pos;
+		rand = ((int) (Math.random() * 4)) * 2 + 1 + pos;
 		int i = 0;
 		do
 		{
+			i++;
+			if(i > 4)
+			{
+				return null;
+			}
+			
 			rand += 2;
 			rand %= 8;
-			i++;
 			newX = me.x + adjacentSpaces[rand][0];
 			newY = me.y + adjacentSpaces[rand][1];
 
-			if(i >= 4)
-			{
-				//				log("No even adjacent movable spaces (from randomEvenAdjSq()).");
-				return null;
-			}
 		}
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
 
@@ -1458,51 +1475,84 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private int[] moveAwayFromCastle()
+	private int[] exploreLattice()
 	{
+		int[] fpoo;
 		int newX, newY;
 
 		if(castleDir % 2 == 0)
 		{
-			int dir = ((int) (Math.random() * 2)) * 2 - 1;
+			int chooseDir = (int) (Math.random() * 2);
+			fpoo = (chooseDir == 0) ? (adjacentSpaces[(castleDir + 4) % 8]) : adjacentSpaces[sideDir];
+			fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
 
-			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
-			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
-
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
+			newX = me.x + fpoo[0];
+			newY = me.y + fpoo[1];
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
 			{
-				return adjacentSpaces[(castleDir + dir) % 8];
+				return fpoo;
 			}
 
-			dir *= -1;
+			fpoo = (chooseDir != 0) ? (adjacentSpaces[(castleDir + 4) % 8]) : adjacentSpaces[sideDir];
+			fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
 
-			newX = me.x + adjacentSpaces[(castleDir + dir) % 8][0];
-			newY = me.y + adjacentSpaces[(castleDir + dir) % 8][1];
-
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
+			newX = me.x + fpoo[0];
+			newY = me.y + fpoo[1];
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
 			{
-				return adjacentSpaces[(castleDir + dir) % 8];
+				return fpoo;
 			}
 		}
 		else
 		{
-			int dir = ((int) (Math.random() * 3)) * 2;
+			int chooseDir = ((int) (Math.random() * 2)) * 2 - 1;
+			fpoo = adjacentSpaces[(castleDir + 4 + chooseDir) % 8];
+			fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
 
-			for(int i = 0; i < 3; i++)
+			newX = me.x + fpoo[0];
+			newY = me.y + fpoo[1];
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
 			{
-				newX = me.x + adjacentSpaces[(castleDir + dir - 2) % 8][0];
-				newY = me.y + adjacentSpaces[(castleDir + dir - 2) % 8][1];
+				return fpoo;
+			}
 
-				if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
-				{
-					return adjacentSpaces[(castleDir + dir - 2) % 8];
-				}
+			fpoo = adjacentSpaces[(castleDir + 4 - chooseDir) % 8];
+			fpoo = new int[] {fpoo[0] * 2, fpoo[1] * 2};
 
-				dir += 2;
-				dir %= 4;
+			newX = me.x + fpoo[0];
+			newY = me.y + fpoo[1];
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
+			{
+				return fpoo;
 			}
 		}
 
 		return null;
+	}
+
+	private int[] latticify()
+	{
+		int newX, newY;
+		int dir = ((int) (Math.random() * 4)) * 2;
+		int i = 0;
+
+		do
+		{
+			i++;
+			if(i > 4)
+			{
+				return null;
+			}
+			newX = me.x + adjacentSpaces[dir][0];
+			newY = me.y + adjacentSpaces[dir][1];
+
+			dir += 2;
+			dir %= 8;
+		}
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
+		
+		log("turn: " + (me.turn + globalMinusLocalTurn) + ". destination: " + newX + " " + newY);
+		
+		return adjacentSpaces[(dir - 2) % 8];
 	}
 }
