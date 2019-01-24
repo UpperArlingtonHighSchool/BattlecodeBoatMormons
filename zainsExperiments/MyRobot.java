@@ -279,8 +279,8 @@ public class MyRobot extends BCAbstractRobot {
 					if(loc != null)
 					{
 						sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
-						castleTalk(4 + (me.turn % 4 == 0 ? 1 : 0));
-						return buildUnit(4 + (me.turn % 4 == 0 ? 1 : 0), loc[0], loc[1]);
+						castleTalk(4);
+						return buildUnit(4, loc[0], loc[1]);
 					}
 				}
 			}
@@ -590,17 +590,15 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(fuel >= pilgrimLim * 2)
 			{
-				int[] mov = latticify();
-				if(mov != null)
+				if(moveAway())
 				{
-					return null;
+					int[] mov = exploreLattice();
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
 				}
 
-				mov = exploreLattice();
-				if(mov != null)
-				{
-					return move(mov[0], mov[1]);
-				}
 			}
 		}
 		return null;
@@ -1236,16 +1234,23 @@ public class MyRobot extends BCAbstractRobot {
 	private void updateTargetCastle()
 	{
 		boolean castleKilled = true;
-		int x, y;
+		int newX, newY;
 
-		for(int i = 0; i < 4; i++)
+		for(int dx = -2; dx <= 2; dx++)
 		{
-			x = enemyCastleLocs[targetCastle][0] + (int) Math.floor(i / 2);
-			y = enemyCastleLocs[targetCastle][1] + i % 2;
-
-			if(robotMap[y][x] != 0 && (me.x != x || me.y != y))
+			for(int dy = -2; dy <= 2; dy++)
 			{
-				castleKilled = false;
+				newX = enemyCastleLocs[targetCastle][0] + dx;
+				newY = enemyCastleLocs[targetCastle][1] + dy;
+
+				if(!(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length))
+				{
+					int ID = robotMap[newY][newX];
+					if(ID != 0 && getRobot(ID).team != me.team)
+					{
+						castleKilled = false;
+					}
+				}
 			}
 		}
 
@@ -1610,9 +1615,39 @@ public class MyRobot extends BCAbstractRobot {
 
 			dir += 2;
 			dir %= 8;
+
+			if(me.unit == 5)
+			{
+			}
 		}
 		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
 
-		return adjacentSpaces[(dir - 2) % 8];
+		return adjacentSpaces[(dir + 6) % 8];
+	}
+
+	private boolean moveAway()
+	{
+		for(int dx = -2; dx <= 2; dx++)
+		{
+			for(int dy = -2; dy <= 2; dy++)
+			{
+				if((Math.abs(dx) == 2 && Math.abs(dy) == 2) || (dx == 0 && dy == 0))
+				{
+					continue;
+				}
+				
+				int newX = me.x + dx;
+				int newY = me.y + dy;
+				if(!(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length))
+				{
+					int ID = robotMap[newY][newX];
+					if(ID > 0 && getRobot(ID).team == me.team && (getRobot(ID).unit == 4 || getRobot(ID).unit == 0  || getRobot(ID).unit == 1))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 }
