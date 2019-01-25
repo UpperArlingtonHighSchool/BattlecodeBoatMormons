@@ -517,25 +517,13 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
 			getTargetCastle();
-			getCastleDir();
-			if(castleDir % 2 == 0)
-			{
-				sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
-			}
 			arrived = false;
 		}
 
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
-			if(fuel >= 25)
-			{
-				return attack(atk[0], atk[1]);
-			}
-			else
-			{
-				return null;
-			}
+			return attack(atk[0], atk[1]);
 		}
 
 		if(me.turn + globalMinusLocalTurn >= 850)
@@ -595,6 +583,10 @@ public class MyRobot extends BCAbstractRobot {
 					int[] mov = randomAdjSq();
 					if(mov != null)
 					{
+						if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
+						{
+							arrived = true;
+						}
 						return move(mov[0], mov[1]);
 					}
 					return null;
@@ -602,6 +594,10 @@ public class MyRobot extends BCAbstractRobot {
 
 				int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
 				locInPath += 1;
+				if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
+				{
+					arrived = true;
+				}
 				return move(mov[0], mov[1]);
 			}
 		}
