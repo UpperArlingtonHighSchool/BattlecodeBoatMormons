@@ -583,18 +583,26 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(!arrived && fuel >= pilgrimLim * 2)
 			{
-				int[] mov = latticify();
-				if(mov != null)
+				if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 				{
-					arrived = true;
-					return move(mov[0], mov[1]);
+					currentPath = idkwhattocallthisbutitsforprophets();
 				}
 
-				mov = exploreLattice();
-				if(mov != null)
+				if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 				{
-					return move(mov[0], mov[1]);
+					log("Prophet BFS returned null (or something invalid).");
+
+					int[] mov = randomAdjSq();
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+					return null;
 				}
+
+				int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+				locInPath += 1;
+				return move(mov[0], mov[1]);
 			}
 		}
 		return null;
@@ -1631,7 +1639,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			newX = me.x + fpoo[0];
 			newY = me.y + fpoo[1];
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 			{
 				return fpoo;
 			}
@@ -1641,7 +1649,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			newX = me.x + fpoo[0];
 			newY = me.y + fpoo[1];
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 			{
 				return fpoo;
 			}
@@ -1654,7 +1662,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			newX = me.x + fpoo[0];
 			newY = me.y + fpoo[1];
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 			{
 				return fpoo;
 			}
@@ -1664,7 +1672,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			newX = me.x + fpoo[0];
 			newY = me.y + fpoo[1];
-			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] != -1 && robotMap[newY][newX] <= 0)
+			if(newX >= 0 && newX < fullMap.length && newY >= 0 && newY < fullMap.length && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
 			{
 				return fpoo;
 			}
@@ -1673,7 +1681,32 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	private int[] latticify()
+	private ArrayList<int[]> idkwhattocallthisbutitsforprophets()
+	{
+		int newX, newY, rRange;
+		for(int range = 1; range < 64; range++)
+		{
+			rRange = (int) (Math.floor(Math.sqrt(range)));
+			for(int dx = -rRange; dx <= rRange; dx++)
+			{
+				for(int dy = -rRange; dy <= rRange; dy++)
+				{
+					if(dx * dx + dy * dy == range)
+					{
+						newX = me.x + dx;
+						newY = me.y + dy;
+						if(isOnMap(newX, newY) && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
+						{
+							return bfs(newX, newY);
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/*private int[] latticify()
 	{
 		int newX, newY;
 		int dir = ((int) (Math.random() * 4)) * 2;
@@ -1696,10 +1729,10 @@ public class MyRobot extends BCAbstractRobot {
 			{
 			}
 		}
-		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] == -1 || robotMap[newY][newX] > 0);
+		while(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length || fullMap[newY][newX] != 0 || robotMap[newY][newX] > 0);
 
 		return adjacentSpaces[(dir + 6) % 8];
-	}
+	}*/
 
 	private boolean moveAway()
 	{
@@ -1725,5 +1758,10 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return false;
+	}
+
+	private boolean isOnMap(int x, int y)
+	{
+		return (x >= 0 && x < fullMap.length && y >= 0 && y < fullMap.length);
 	}
 }
