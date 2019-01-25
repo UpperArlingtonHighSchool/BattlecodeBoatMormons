@@ -244,8 +244,8 @@ public class MyRobot extends BCAbstractRobot {
 			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM && loc != null)
 			{
 				sendCastleLocs(loc[0] * loc[0] + loc[1] * loc[1]);
-				castleTalk(5);
-				return buildUnit(5, loc[0], loc[1]);
+				castleTalk(3);
+				return buildUnit(3, loc[0], loc[1]);
 			}
 
 			return attack(atk[0], atk[1]);
@@ -423,13 +423,89 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action crusader()
 	{
+
 		if (me.turn == 1)
 		{
 			getAllCastleLocs();
 			getEnemyCastleLocs();
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines)) - numCastles;
+			getTargetCastle();
+			getCastleDir();
+			if(castleDir % 2 == 0)
+			{
+				sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
+			}
 		}
 
+		int[] atk = autoAttack();
+		if(atk != null)
+		{
+			if(fuel >= 10)
+			{
+				return attack(atk[0], atk[1]);
+			}
+			else
+			{
+				return null;
+			}
+		}
+
+		if(me.turn + globalMinusLocalTurn >= 850)
+		{
+			updateTargetCastle();
+
+			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+			{
+				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
+			}
+
+			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+			{
+				log("Prophet BFS returned null (or something invalid).");
+				if(fuel >= pilgrimLim * 2) // leave fuel for mining
+				{
+					int[] mov = randomAdjSq();
+
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+
+					return null;
+				}
+				else
+				{
+					return null;
+				}
+			}
+
+			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
+
+			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
+			{
+				locInPath += 1;
+				return move(mov[0], mov[1]);
+			}
+			else
+			{	
+				return null;
+			}
+		}
+		else
+		{
+			if(fuel >= pilgrimLim * 2)
+			{
+				if(moveAway())
+				{
+					int[] mov = exploreLattice();
+					if(mov != null)
+					{
+						return move(mov[0], mov[1]);
+					}
+				}
+
+			}
+		}
 		return null;
 	}
 
@@ -1635,7 +1711,7 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					continue;
 				}
-				
+
 				int newX = me.x + dx;
 				int newY = me.y + dy;
 				if(!(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length))
