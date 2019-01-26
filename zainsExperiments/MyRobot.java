@@ -117,6 +117,8 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 			castleLocs[0] = new int[] {me.x, me.y};
+
+			return null;
 		}
 
 		else if (me.turn == 2)
@@ -187,17 +189,18 @@ public class MyRobot extends BCAbstractRobot {
 		// Every turn
 
 		// Update robs[2].size() and castle deaths
-		for(int castID : robs[0])
+		if(me.turn > 3)
 		{
-			Robot castle = getRobot(castID);
-			if (castle == null)
+			for(int castNum = 0; castNum < robs[0].size(); castNum++)
 			{
-				ourDeadCastles += 1;
-				robs[0].remove(castID);
-			}
+				Robot castle = getCastObj(castNum);
+				if (castNum != 0 && castle == null)
+				{
+					log("yup");
+					ourDeadCastles += 1;
+					robs[0].remove(castNum);
+				}
 
-			if(me.turn > 3)  // INSTEAD, IF YOU SEE A BROADCAST SCAN GETVISIBLEROBOTS FOR THE NEW ROBOT!!!!
-			{
 				int talk = castle.castle_talk;
 				if(talk >= 1 && talk <= 5)
 				{
@@ -251,7 +254,7 @@ public class MyRobot extends BCAbstractRobot {
 
 				if(doit == 0)
 				{
-					int[] loc = randomOddAdjSq();
+					int[] loc = randomAdjSq();
 					if(loc != null)
 					{
 						castleTalk(4);
@@ -1446,7 +1449,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		return false;
 	}
-	
+
 	private ArrayList<int[]> goToLattice()
 	{
 		int newX, newY, rRange;
@@ -1559,52 +1562,46 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		if(globalTurn == 849)
 		{
-			Robot[] visb = getVisibleRobots();
+			int talk = getCastObj(0).signal ^ xorKey;
 
-			for(Robot cast : visb)
+			if(talk >= 4096)
 			{
-				if(cast.id == robs[0].get(0))
-				{
-					int talk = cast.signal ^ xorKey;
-
-					if(talk >= 4096)
-					{
-						numCastles = 1;
-						getEnemyCastleLocs();
-						getTargetCastle();
-					}
-					else
-					{
-						numCastles = 2;
-						castleLocs[1][0] = talk % 64;
-						castleLocs[1][1] = (int) Math.floor(talk / 64);
-					}
-
-					break;
-				}
+				numCastles = 1;
+				getEnemyCastleLocs();
+				getTargetCastle();
+			}
+			else
+			{
+				numCastles = 2;
+				castleLocs[1][0] = talk % 64;
+				castleLocs[1][1] = (int) Math.floor(talk / 64);
 			}
 		}
 		else if(globalTurn == 850 && numCastles == 2)
 		{
-			Robot[] visb = getVisibleRobots();
-
-			for(Robot cast : visb)
+			int talk = getCastObj(0).signal ^ xorKey;
+			if(talk < 4096)
 			{
-				if(cast.id == robs[0].get(0))
-				{
-					int talk = cast.signal ^ xorKey;
-					if(talk < 4096)
-					{
-						numCastles = 3;
-						castleLocs[2][0] = talk % 64;
-						castleLocs[2][1] = (int) Math.floor(talk / 64);
-					}
-					getEnemyCastleLocs();
-					getTargetCastle();
-					
-					break;
-				}
+				numCastles = 3;
+				castleLocs[2][0] = talk % 64;
+				castleLocs[2][1] = (int) Math.floor(talk / 64);
+			}
+			getEnemyCastleLocs();
+			getTargetCastle();
+		}
+	}
+
+	private Robot getCastObj(int num)
+	{
+		Robot[] visb = getVisibleRobots();
+
+		for(Robot cast : visb)
+		{
+			if(cast.id == robs[0].get(num))
+			{
+				return cast;
 			}
 		}
+		return null;
 	}
 }
