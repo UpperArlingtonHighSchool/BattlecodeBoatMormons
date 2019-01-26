@@ -565,7 +565,7 @@ public class MyRobot extends BCAbstractRobot {
 
 				int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
 				locInPath += 1;
-				if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(newX, newY))
+				if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(me.x + mov[0], me.y + mov[1]))
 				{
 					arrived = true;
 				}
