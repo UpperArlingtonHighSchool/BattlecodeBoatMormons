@@ -565,7 +565,7 @@ public class MyRobot extends BCAbstractRobot {
 
 				int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
 				locInPath += 1;
-				if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
+				if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(newX, newY))
 				{
 					arrived = true;
 				}
@@ -1438,6 +1438,15 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
+	private boolean isNextToHome(int newX, int newY)
+	{
+		if(Math.abs(newX - castleLocs[0][0]) <= 1 && Math.abs(newY - castleLocs[0][1]) <= 1)
+		{
+			return true;
+		}
+		return false;
+	}
+	
 	private ArrayList<int[]> goToLattice()
 	{
 		int newX, newY, rRange;
@@ -1452,7 +1461,7 @@ public class MyRobot extends BCAbstractRobot {
 					{
 						newX = me.x + dx;
 						newY = me.y + dy;
-						if(isOnMap(newX, newY) && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0 && (newX + newY) % 2 == 0)
+						if(isOnMap(newX, newY) && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0 && (newX + newY) % 2 == 0 && !isNextToHome(newX, newY))
 						{
 							return bfs(newX, newY);
 						}
