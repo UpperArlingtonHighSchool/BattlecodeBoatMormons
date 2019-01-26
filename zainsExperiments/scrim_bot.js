@@ -485,6 +485,7 @@ var bc19;
                     ;
                 }
                 this.castleLocs[0] = [this.me.x, this.me.y];
+                return null;
             }
             else if (this.me.turn === 2) {
                 if (this.robs[0].length > 1) {
@@ -531,24 +532,20 @@ var bc19;
                     this.signal(this.castleLocs[2][0] + this.castleLocs[2][1] * 64, (Math.floor(((this.fullMap.length * this.fullMap.length / numBuild | 0) / numBuild | 0)) | 0));
                 }
             }
-            {
-                var array124 = this.robs[0];
-                for (var index123 = 0; index123 < array124.length; index123++) {
-                    var castID = array124[index123];
-                    {
-                        var castle = this.getRobot(castID);
-                        if (castle == null) {
-                            this.ourDeadCastles += 1;
-                            /* remove */ this.robs[0].splice(castID, 1);
-                        }
-                        if (this.me.turn > 3) {
-                            var talk = castle.castle_talk;
-                            if (talk >= 1 && talk <= 5) {
-                                this.getNewUnit(talk);
-                            }
-                        }
+            if (this.me.turn > 3) {
+                for (var castNum = 0; castNum < this.robs[0].length; castNum++) {
+                    var castle = this.getCastObj(castNum);
+                    if (castNum !== 0 && castle == null) {
+                        this.log("yup");
+                        this.ourDeadCastles += 1;
+                        /* remove */ this.robs[0].splice(castNum, 1);
+                    }
+                    var talk = castle.castle_talk;
+                    if (talk >= 1 && talk <= 5) {
+                        this.getNewUnit(talk);
                     }
                 }
+                ;
             }
             if (this.me.turn % 20 === 0) {
                 this.log("Turn: " + this.me.turn + ". Pilgrim population: " + this.robs[2].length + ". Prophet population:  " + this.robs[4].length + ". Pilgrim limit: " + this.pilgrimLim + ".");
@@ -575,7 +572,7 @@ var bc19;
                         doit = ((Math.random() * (this.robs[0].length + this.robs[1].length)) | 0);
                     }
                     if (doit === 0) {
-                        var loc_2 = this.randomOddAdjSq();
+                        var loc_2 = this.randomAdjSq();
                         if (loc_2 != null) {
                             this.castleTalk(4);
                             return this.buildUnit(4, loc_2[0], loc_2[1]);
@@ -894,9 +891,9 @@ var bc19;
         };
         /*private*/ MyRobot.prototype.getHomeCastle = function () {
             {
-                var array126 = this.getVisibleRobots();
-                for (var index125 = 0; index125 < array126.length; index125++) {
-                    var rob = array126[index125];
+                var array124 = this.getVisibleRobots();
+                for (var index123 = 0; index123 < array124.length; index123++) {
+                    var rob = array124[index123];
                     {
                         if (rob.unit === this.SPECS.CASTLE) {
                             this.castleLocs[0] = [rob.x, rob.y];
@@ -914,8 +911,8 @@ var bc19;
                 looping: for (var y = 0; y < this.fullMap.length; y++) {
                     if (this.fullMap[y][x] === this.KARBONITE) {
                         var temp = [x, y];
-                        var _loop_1 = function (index127) {
-                            var out = this_1.karbosInUse[index127];
+                        var _loop_1 = function (index125) {
+                            var out = this_1.karbosInUse[index125];
                             {
                                 if (out[0] === temp[0] && out[1] === temp[1]) {
                                     if (this_1.robotMap[y][x] === 0) {
@@ -928,8 +925,8 @@ var bc19;
                             }
                         };
                         var this_1 = this;
-                        for (var index127 = 0; index127 < this.karbosInUse.length; index127++) {
-                            var state_1 = _loop_1(index127);
+                        for (var index125 = 0; index125 < this.karbosInUse.length; index125++) {
+                            var state_1 = _loop_1(index125);
                             switch (state_1) {
                                 case "continue-looping": continue looping;
                             }
@@ -958,8 +955,8 @@ var bc19;
                 looping: for (var y = 0; y < this.fullMap.length; y++) {
                     if (this.fullMap[y][x] === this.FUEL) {
                         var temp = [x, y];
-                        var _loop_2 = function (index128) {
-                            var out = this_2.fuelsInUse[index128];
+                        var _loop_2 = function (index126) {
+                            var out = this_2.fuelsInUse[index126];
                             {
                                 if (out[0] === temp[0] && out[1] === temp[1]) {
                                     if (this_2.robotMap[y][x] === 0) {
@@ -972,8 +969,8 @@ var bc19;
                             }
                         };
                         var this_2 = this;
-                        for (var index128 = 0; index128 < this.fuelsInUse.length; index128++) {
-                            var state_2 = _loop_2(index128);
+                        for (var index126 = 0; index126 < this.fuelsInUse.length; index126++) {
+                            var state_2 = _loop_2(index126);
                             switch (state_2) {
                                 case "continue-looping": continue looping;
                             }
@@ -1049,8 +1046,8 @@ var bc19;
         /*private*/ MyRobot.prototype.getEnemiesInRange = function () {
             var robs = this.getVisibleRobots();
             var enms = ([]);
-            for (var index129 = 0; index129 < robs.length; index129++) {
-                var rob = robs[index129];
+            for (var index127 = 0; index127 < robs.length; index127++) {
+                var rob = robs[index127];
                 {
                     if (rob.team !== this.me.team && (rob.x - this.me.x) * (rob.x - this.me.x) + (rob.y - this.me.y) * (rob.y - this.me.y) <= this.SPECS.UNITS[this.me.unit].ATTACK_RADIUS[1] && (rob.x - this.me.x) * (rob.x - this.me.x) + (rob.y - this.me.y) * (rob.y - this.me.y) >= this.SPECS.UNITS[this.me.unit].ATTACK_RADIUS[0]) {
                         /* add */ (enms.push(rob) > 0);
@@ -1071,8 +1068,8 @@ var bc19;
             var found = false;
             var i = 0;
             while ((!found && i < 6)) {
-                for (var index130 = 0; index130 < robs.length; index130++) {
-                    var rob = robs[index130];
+                for (var index128 = 0; index128 < robs.length; index128++) {
+                    var rob = robs[index128];
                     {
                         if (rob.unit === this.attackPriority[i]) {
                             found = true;
@@ -1102,8 +1099,8 @@ var bc19;
         /*private*/ MyRobot.prototype.getPreacherKillableRobots = function () {
             var robs = this.getVisibleRobots();
             var killable = ([]);
-            for (var index131 = 0; index131 < robs.length; index131++) {
-                var rob = robs[index131];
+            for (var index129 = 0; index129 < robs.length; index129++) {
+                var rob = robs[index129];
                 {
                     if (rob.team !== this.me.team && (rob.unit === this.SPECS.PILGRIM || rob.unit === this.SPECS.PROPHET)) {
                         /* add */ (killable.push(rob) > 0);
@@ -1115,8 +1112,8 @@ var bc19;
         /*private*/ MyRobot.prototype.getAllies = function () {
             var robs = this.getVisibleRobots();
             var allies = ([]);
-            for (var index132 = 0; index132 < robs.length; index132++) {
-                var rob = robs[index132];
+            for (var index130 = 0; index130 < robs.length; index130++) {
+                var rob = robs[index130];
                 {
                     if (rob.team === this.me.team) {
                         /* add */ (allies.push(rob) > 0);
@@ -1128,8 +1125,8 @@ var bc19;
         /*private*/ MyRobot.prototype.getEnemyRobots = function () {
             var robs = this.getVisibleRobots();
             var enemies = ([]);
-            for (var index133 = 0; index133 < robs.length; index133++) {
-                var rob = robs[index133];
+            for (var index131 = 0; index131 < robs.length; index131++) {
+                var rob = robs[index131];
                 {
                     if (rob.team !== this.me.team && (rob.unit === this.SPECS.CRUSADER || rob.unit === this.SPECS.PREACHER || rob.unit === this.SPECS.CASTLE)) {
                         /* add */ (enemies.push(rob) > 0);
@@ -1141,8 +1138,8 @@ var bc19;
         /*private*/ MyRobot.prototype.getEnemyChurches = function () {
             var robs = this.getVisibleRobots();
             var buildings = ([]);
-            for (var index134 = 0; index134 < robs.length; index134++) {
-                var rob = robs[index134];
+            for (var index132 = 0; index132 < robs.length; index132++) {
+                var rob = robs[index132];
                 {
                     if (rob.team !== this.me.team && rob.unit === this.SPECS.CHURCH) {
                         /* add */ (buildings.push(rob) > 0);
@@ -1181,8 +1178,8 @@ var bc19;
                         x += 3;
                     }
                     attackLocs[y][x] = 0;
-                    for (var index135 = 0; index135 < allies.length; index135++) {
-                        var ally = allies[index135];
+                    for (var index133 = 0; index133 < allies.length; index133++) {
+                        var ally = allies[index133];
                         {
                             if (this.squareContainsRobot(ally, x, y)) {
                                 attackLocs[y][x] = -100;
@@ -1190,8 +1187,8 @@ var bc19;
                         }
                     }
                     if (attackLocs[y][x] === 0) {
-                        for (var index136 = 0; index136 < killable.length; index136++) {
-                            var deathable = killable[index136];
+                        for (var index134 = 0; index134 < killable.length; index134++) {
+                            var deathable = killable[index134];
                             {
                                 if (this.squareContainsRobot(deathable, x, y)) {
                                     attackLocs[y][x] += 1;
@@ -1219,11 +1216,11 @@ var bc19;
             var combat = this.getEnemyRobots();
             var bestbestLocs = ([]);
             /* add */ (bestbestLocs.push([0, 0, -1]) > 0);
-            for (var index137 = 0; index137 < bestLocs.length; index137++) {
-                var pos = bestLocs[index137];
+            for (var index135 = 0; index135 < bestLocs.length; index135++) {
+                var pos = bestLocs[index135];
                 {
-                    for (var index138 = 0; index138 < combat.length; index138++) {
-                        var rob = combat[index138];
+                    for (var index136 = 0; index136 < combat.length; index136++) {
+                        var rob = combat[index136];
                         {
                             if (this.squareContainsRobot(rob, pos[0], pos[1])) {
                                 attackLocs[pos[1]][pos[0]] += 1;
@@ -1245,11 +1242,11 @@ var bc19;
             var build = this.getEnemyChurches();
             var goodLocs = ([]);
             /* add */ (goodLocs.push([0, 0, -1]) > 0);
-            for (var index139 = 0; index139 < bestbestLocs.length; index139++) {
-                var pos = bestbestLocs[index139];
+            for (var index137 = 0; index137 < bestbestLocs.length; index137++) {
+                var pos = bestbestLocs[index137];
                 {
-                    for (var index140 = 0; index140 < build.length; index140++) {
-                        var rob = build[index140];
+                    for (var index138 = 0; index138 < build.length; index138++) {
+                        var rob = build[index138];
                         {
                             if (this.squareContainsRobot(rob, pos[0], pos[1])) {
                                 attackLocs[pos[1]][pos[0]] += 1;
@@ -1270,8 +1267,8 @@ var bc19;
             }
             var lowestID = 4097;
             var finalBestLoc = [-1, -1];
-            for (var index141 = 0; index141 < goodLocs.length; index141++) {
-                var loc = goodLocs[index141];
+            for (var index139 = 0; index139 < goodLocs.length; index139++) {
+                var loc = goodLocs[index139];
                 {
                     for (var dx = -1; dx <= 1; dx++) {
                         for (var dy = -1; dy <= 1; dy++) {
@@ -1395,8 +1392,8 @@ var bc19;
         };
         /*private*/ MyRobot.prototype.spaceIsCootiesFree = function (x, y) {
             var robomap = this.robotMap;
-            for (var index142 = 0; index142 < this.adjacentSpaces.length; index142++) {
-                var adj = this.adjacentSpaces[index142];
+            for (var index140 = 0; index140 < this.adjacentSpaces.length; index140++) {
+                var adj = this.adjacentSpaces[index140];
                 {
                     if (y + adj[1] > -1 && y + adj[1] < robomap.length && x + adj[0] > -1 && x + adj[0] < robomap.length) {
                         if (robomap[y + adj[1]][x + adj[0]] > 0) {
@@ -1647,16 +1644,16 @@ var bc19;
         };
         /*private*/ MyRobot.prototype.getNewUnit = function (talk) {
             {
-                var array144 = this.getVisibleRobots();
-                for (var index143 = 0; index143 < array144.length; index143++) {
-                    var rob = array144[index143];
+                var array142 = this.getVisibleRobots();
+                for (var index141 = 0; index141 < array142.length; index141++) {
+                    var rob = array142[index141];
                     {
                         if (rob.unit === talk) {
                             var n = true;
                             {
-                                var array146 = this.robs[talk];
-                                for (var index145 = 0; index145 < array146.length; index145++) {
-                                    var oldRobID = array146[index145];
+                                var array144 = this.robs[talk];
+                                for (var index143 = 0; index143 < array144.length; index143++) {
+                                    var oldRobID = array144[index143];
                                     {
                                         if (rob.id === oldRobID) {
                                             n = false;
@@ -1676,46 +1673,40 @@ var bc19;
         };
         /*private*/ MyRobot.prototype.getCastleLocs = function () {
             if (this.globalTurn === 849) {
-                var visb = this.getVisibleRobots();
-                for (var index147 = 0; index147 < visb.length; index147++) {
-                    var cast = visb[index147];
-                    {
-                        if (cast.id === this.robs[0][0]) {
-                            var talk = cast.signal ^ this.xorKey;
-                            if (talk >= 4096) {
-                                this.numCastles = 1;
-                                this.getEnemyCastleLocs();
-                                this.getTargetCastle();
-                            }
-                            else {
-                                this.numCastles = 2;
-                                this.castleLocs[1][0] = talk % 64;
-                                this.castleLocs[1][1] = (Math.floor((talk / 64 | 0)) | 0);
-                            }
-                            break;
-                        }
-                    }
+                var talk = this.getCastObj(0).signal ^ this.xorKey;
+                if (talk >= 4096) {
+                    this.numCastles = 1;
+                    this.getEnemyCastleLocs();
+                    this.getTargetCastle();
+                }
+                else {
+                    this.numCastles = 2;
+                    this.castleLocs[1][0] = talk % 64;
+                    this.castleLocs[1][1] = (Math.floor((talk / 64 | 0)) | 0);
                 }
             }
             else if (this.globalTurn === 850 && this.numCastles === 2) {
-                var visb = this.getVisibleRobots();
-                for (var index148 = 0; index148 < visb.length; index148++) {
-                    var cast = visb[index148];
-                    {
-                        if (cast.id === this.robs[0][0]) {
-                            var talk = cast.signal ^ this.xorKey;
-                            if (talk < 4096) {
-                                this.numCastles = 3;
-                                this.castleLocs[2][0] = talk % 64;
-                                this.castleLocs[2][1] = (Math.floor((talk / 64 | 0)) | 0);
-                            }
-                            this.getEnemyCastleLocs();
-                            this.getTargetCastle();
-                            break;
-                        }
+                var talk = this.getCastObj(0).signal ^ this.xorKey;
+                if (talk < 4096) {
+                    this.numCastles = 3;
+                    this.castleLocs[2][0] = talk % 64;
+                    this.castleLocs[2][1] = (Math.floor((talk / 64 | 0)) | 0);
+                }
+                this.getEnemyCastleLocs();
+                this.getTargetCastle();
+            }
+        };
+        /*private*/ MyRobot.prototype.getCastObj = function (num) {
+            var visb = this.getVisibleRobots();
+            for (var index145 = 0; index145 < visb.length; index145++) {
+                var cast = visb[index145];
+                {
+                    if (cast.id === this.robs[0][num]) {
+                        return cast;
                     }
                 }
             }
+            return null;
         };
         return MyRobot;
     }(bc19.BCAbstractRobot));
