@@ -155,27 +155,27 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			getEnemyCastleLocs();
 		}
-		
+
 		else if (me.turn == 849)
 		{
 			if(numCastles == 1)
 			{
-				signal(4096, 100);
+				signal(4096, (int) Math.floor(fullMap.length * fullMap.length / 4));
 			}
 			else
 			{
-				signal(castleLocs[1][0] + castleLocs[1][1] * 64, 100);
+				signal(castleLocs[1][0] + castleLocs[1][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / 4));
 			}
 		}
 		else if (me.turn == 849)
 		{
 			if(numCastles <= 2)
 			{
-				signal(4096, 100);
+				signal(4096,  (int) Math.floor(fullMap.length * fullMap.length / 4));
 			}
 			else
 			{
-				signal(castleLocs[2][0] + castleLocs[2][1] * 64, 100);
+				signal(castleLocs[2][0] + castleLocs[2][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / 4));
 			}
 		}
 
@@ -394,6 +394,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1)
 		{
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
+			getHomeCastle();
 			getCastleDir();
 			if(castleDir % 2 == 0)
 			{
@@ -414,20 +415,20 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		getCastleLocs();
-		
+		getCastleLocs(); // MAKE THIS WORK LIASFUGHASRGUIHARGLASIGHASGHALSUHGUASH GASDUGH ASDLHGKHAJKSDHGJKAHSDLUGHASDJGNSAD.NGAKJSG
+
 		if(globalTurn >= 850)
 		{
 			updateTargetCastle();
 
-			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0 || globalTurn == 850)
 			{
 				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
 
 			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 			{
-				log("Crusader BFS returned null (or something invalid). Turn: " + globalTurn);
+				log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
 				if(fuel >= pilgrimLim * 2) // leave fuel for mining
 				{
 					int[] mov = randomAdjSq();
@@ -480,22 +481,23 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1)
 		{
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
+			getHomeCastle();
 			arrived = false;
 		}
 
 		getCastleLocs(); // Only does anything on turns 849-850
-		
+
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
 			return attack(atk[0], atk[1]);
 		}
-		
+
 		if(globalTurn >= 850)
 		{
 			updateTargetCastle();
 
-			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
+			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0 || globalTurn == 850)
 			{
 				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
 			}
@@ -575,6 +577,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
 			getCastleDir();
+			getHomeCastle();
 			if(castleDir % 2 == 0)
 			{
 				sideDir = (((int) (Math.random() * 2)) * 4 + castleDir + 2) % 8;
@@ -588,7 +591,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		getCastleLocs();
-		
+
 		return null;
 	}
 
@@ -1538,35 +1541,57 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 	}
-	
+
 	private void getCastleLocs()
 	{
 		if(globalTurn == 849)
 		{
-			int talk = getRobot(robs[0].get(0)).signal ^ xorKey;
-			if(talk >= 4096)
+			Robot[] visb = getVisibleRobots();
+
+			for(Robot cast : visb)
 			{
-				numCastles = 1;
-				getEnemyCastleLocs();
-			}
-			else
-			{
-				numCastles = 2;
-				castleLocs[1][0] = talk % 64;
-				castleLocs[1][1] = (int) Math.floor(talk / 64);
+				if(cast.id == robs[0].get(0))
+				{
+					int talk = cast.signal ^ xorKey;
+
+					if(talk >= 4096)
+					{
+						numCastles = 1;
+						getEnemyCastleLocs();
+						getTargetCastle();
+					}
+					else
+					{
+						numCastles = 2;
+						castleLocs[1][0] = talk % 64;
+						castleLocs[1][1] = (int) Math.floor(talk / 64);
+					}
+
+					break;
+				}
 			}
 		}
 		else if(globalTurn == 850 && numCastles == 2)
 		{
-			int talk = getRobot(robs[0].get(0)).signal ^ xorKey;
-			if(talk < 4096)
+			Robot[] visb = getVisibleRobots();
+
+			for(Robot cast : visb)
 			{
-				numCastles = 3;
-				castleLocs[2][0] = talk % 64;
-				castleLocs[2][1] = (int) Math.floor(talk / 64);
+				if(cast.id == robs[0].get(0))
+				{
+					int talk = cast.signal ^ xorKey;
+					if(talk < 4096)
+					{
+						numCastles = 3;
+						castleLocs[2][0] = talk % 64;
+						castleLocs[2][1] = (int) Math.floor(talk / 64);
+					}
+					getEnemyCastleLocs();
+					getTargetCastle();
+					
+					break;
+				}
 			}
-			getEnemyCastleLocs();
-			getTargetCastle();
 		}
 	}
 }
