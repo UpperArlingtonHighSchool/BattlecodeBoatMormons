@@ -327,7 +327,7 @@ public class MyRobot extends BCAbstractRobot {
 			currentPath = bfs(castleLocs[home][0], castleLocs[home][1]);
 			if (currentPath == null)
 			{
-				log("Pilgrim BFS returned null.");
+				log("Pilgrim BFS returned null. Turn: " + globalTurn);
 				if(fuel >= pilgrimLim) // leave fuel for mining
 				{
 					int[] move = randomAdjSq();
@@ -372,7 +372,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		currentPath = bfs(location[0], location[1]); // Actually go there
 		if (currentPath == null) {
-			log("Pilgrim BFS returned null. 2");
+			log("Pilgrim BFS returned null (loc. 2). Turn: " + globalTurn);
 			return null;
 		}
 		int[] nextMove = currentPath.get(locInPath);
@@ -394,7 +394,6 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1)
 		{
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
-			getTargetCastle();
 			getCastleDir();
 			if(castleDir % 2 == 0)
 			{
@@ -415,6 +414,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
+		getCastleLocs();
+		
 		if(globalTurn >= 850)
 		{
 			updateTargetCastle();
@@ -426,7 +427,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 			{
-				log("Prophet BFS returned null (or something invalid).");
+				log("Crusader BFS returned null (or something invalid). Turn: " + globalTurn);
 				if(fuel >= pilgrimLim * 2) // leave fuel for mining
 				{
 					int[] mov = randomAdjSq();
@@ -479,19 +480,17 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1)
 		{
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
-			getTargetCastle();
 			arrived = false;
 		}
 
+		getCastleLocs(); // Only does anything on turns 849-850
+		
 		int[] atk = autoAttack();
 		if(atk != null)
 		{
 			return attack(atk[0], atk[1]);
 		}
-		// HERE check for numCastles for non-castles
-
-		getCastleLocs();
-
+		
 		if(globalTurn >= 850)
 		{
 			updateTargetCastle();
@@ -503,7 +502,7 @@ public class MyRobot extends BCAbstractRobot {
 
 			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 			{
-				log("Prophet BFS returned null (or something invalid).");
+				log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
 				if(fuel >= pilgrimLim * 2) // leave fuel for mining
 				{
 					int[] mov = randomAdjSq();
@@ -539,12 +538,12 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 				{
-					currentPath = idkwhattocallthisbutitsforprophets();
+					currentPath = goToLattice();
 				}
 
 				if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 				{
-					log("Prophet BFS returned null (or something invalid).");
+					log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
 
 					int[] mov = randomAdjSq();
 					if(mov != null)
@@ -575,7 +574,6 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1)
 		{
 			pilgrimLim = (int) Math.floor(Math.min(numFuelMines * 1.25, numFuelMines * .75 + numKarbMines));
-			getTargetCastle();
 			getCastleDir();
 			if(castleDir % 2 == 0)
 			{
@@ -589,62 +587,8 @@ public class MyRobot extends BCAbstractRobot {
 			return atk;
 		}
 
-		if(globalTurn >= 850)
-		{
-			updateTargetCastle();
-
-			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
-			{
-				currentPath = bfs(enemyCastleLocs[targetCastle][0], enemyCastleLocs[targetCastle][1]);
-			}
-
-			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
-			{
-				log("Prophet BFS returned null (or something invalid).");
-				if(fuel >= pilgrimLim * 2) // leave fuel for mining
-				{
-					int[] mov = randomAdjSq();
-
-					if(mov != null)
-					{
-						return move(mov[0], mov[1]);
-					}
-
-					return null;
-				}
-				else
-				{
-					return null;
-				}
-			}
-
-			int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
-
-			if(fuel >= (mov[0] * mov[0] + mov[1] * mov[1]) * 2 + pilgrimLim * .7)
-			{
-				locInPath += 1;
-				return move(mov[0], mov[1]);
-			}
-			else
-			{	
-				return null;
-			}
-		}
-		else
-		{
-			if(fuel >= pilgrimLim * 2)
-			{
-				if(moveAway())
-				{
-					int[] mov = exploreLattice();
-					if(mov != null)
-					{
-						return move(mov[0], mov[1]);
-					}
-				}
-
-			}
-		}
+		getCastleLocs();
+		
 		return null;
 	}
 
@@ -849,7 +793,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else
 		{
-			log("uh oh crusader numCastles is " + numCastles);
+			log("uh oh numCastles is " + numCastles);
 		}
 	}
 
@@ -1136,7 +1080,7 @@ public class MyRobot extends BCAbstractRobot {
 				if(!(newX < 0 || newX >= fullMap.length || newY < 0 || newY >= fullMap.length))
 				{
 					int ID = robotMap[newY][newX];
-					if(ID != 0 && getRobot(ID).team != me.team)
+					if(ID == -1 || (ID > 0 && getRobot(ID).team != me.team))
 					{
 						castleKilled = false;
 					}
@@ -1487,7 +1431,7 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
-	private ArrayList<int[]> idkwhattocallthisbutitsforprophets()
+	private ArrayList<int[]> goToLattice()
 	{
 		int newX, newY, rRange;
 		for(int range = 1; range < 64; range++)
@@ -1501,7 +1445,7 @@ public class MyRobot extends BCAbstractRobot {
 					{
 						newX = me.x + dx;
 						newY = me.y + dy;
-						if(isOnMap(newX, newY) && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0)
+						if(isOnMap(newX, newY) && fullMap[newY][newX] == 0 && robotMap[newY][newX] <= 0 && (newX + newY) % 2 == 0)
 						{
 							return bfs(newX, newY);
 						}
@@ -1622,6 +1566,7 @@ public class MyRobot extends BCAbstractRobot {
 				castleLocs[2][1] = (int) Math.floor(talk / 64);
 			}
 			getEnemyCastleLocs();
+			getTargetCastle();
 		}
 	}
 }
