@@ -52,7 +52,7 @@ public class MyRobot extends BCAbstractRobot {
 		case 0: // castle
 			return castleAction();
 		case 1: // church
-			break;
+			return churchAction();
 		case 2: // pilgrim
 			return pilgrimAction();
 		case 3: // crusader
@@ -69,7 +69,7 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.turn == 1) {
 			fillAllMines();
 			getMineScores();
-			idenfityClusters();
+			identifyClusters();
 			findClusterCenters();
 
 			numCastles = 1;
@@ -268,6 +268,43 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
+	private Action churchAction() {
+		if (me.turn == 1) {
+			fillAllMines();
+			getMineScores();
+			identifyClusters();
+			numUnits = 1;
+			HOME = new int[] {me.x, me.y};
+			int[] myMine = findClosestMine();
+			for (ArrayList<int[]> cluster : mineClusters) {
+				if (cluster.contains(myMine)) {
+					myMineScore = cluster.size();
+				}
+			}
+			log("church is awake with "+myMineScore+" mines");
+		}
+		if (numUnits < myMineScore) {
+			log("trying to build pilgrim");
+			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+				return null;
+			}
+			for (int[] move : adjacentSpaces) {
+				int buildX = me.x + move[0];
+				int buildY = me.y + move[1];
+				if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
+						|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
+					continue;
+				}
+				numUnits++;
+				log("church is signalling their location at " + (64 * me.y + me.x));
+				signal(64 * me.y + me.x, 2);
+				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
+			}
+		}
+		return null;
+	}
+	
 	public void getFullMap() {
 		boolean[][] p = getPassableMap();
 		boolean[][] k = getKarboniteMap();
@@ -345,7 +382,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	private void idenfityClusters() {
+	private void identifyClusters() {
 		ArrayList<int[]> scannedMines = new ArrayList<>();
 		mineClusters = new ArrayList<>();
 		while (scannedMines.size() != allMines.length) {
