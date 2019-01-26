@@ -18,7 +18,7 @@ public class MyRobot extends BCAbstractRobot {
 	private int myMineScore;
 	private int[][] allKarbos;
 	private int[][] allFuels;
-	private int[] fuelMineScores;
+	private int[] allMineScores;
 	private int currentColonization;
 	private boolean[] isMineColonized;
 	private ArrayList<int[]> karbosInUse = new ArrayList<>();
@@ -36,19 +36,23 @@ public class MyRobot extends BCAbstractRobot {
 	private final int[][] adjacentSpaces = new int[][] { new int[] { 0, 1 }, new int[] { -1, 1 }, new int[] { -1, 0 },
 			new int[] { -1, -1 }, new int[] { 0, -1 }, new int[] { 1, -1 }, new int[] { 1, 0 }, new int[] { 1, 1 } };
 
+	private final int mineClusterRadiusSqrd = 25;
+	private ArrayList<int[]> mineClusterCenters;
+	private ArrayList<ArrayList<int[]>> mineClusters;
+	private int[][] allMines;
+
 	@Override
 	public Action turn() {
 		if (me.turn == 1) {
 			getFullMap();
 			getMineSpots();
-			getMineScores();
 		}
 		robotMap = getVisibleRobotMap();
 		switch (me.unit) {
 		case 0: // castle
 			return castleAction();
 		case 1: // church
-			break;
+			return churchAction();
 		case 2: // pilgrim
 			return pilgrimAction();
 		case 3: // crusader
@@ -63,6 +67,11 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action castleAction() {
 		if (me.turn == 1) {
+			fillAllMines();
+			getMineScores();
+			identifyClusters();
+			findClusterCenters();
+
 			numCastles = 1;
 			castleIDs[0] = me.id;
 
@@ -73,11 +82,11 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-			int[] myMine = findClosestFuel();
-			for (int i = 0; i < allFuels.length; i++) {
-				if (allFuels[i] == myMine) {
-					// log("found my mine");
-					myMineScore = fuelMineScores[i];
+			int[] myMine = findClosestMine();
+			for (int i = 0; i < mineClusters.size(); i++) {
+				if (mineClusters.get(i).contains(myMine)) {
+					log("found my mine");
+					myMineScore = mineClusters.get(i).size();
 					currentColonization = i;
 					isMineColonized[i] = true;
 				}
@@ -94,7 +103,9 @@ public class MyRobot extends BCAbstractRobot {
 				castleIDs[i] = -1;
 				continue;
 			}
-			isMineColonized[castle.castle_talk] = true;
+			if (castle.castle_talk != 0) {
+				isMineColonized[castle.castle_talk - 1] = true;
+			}
 		}
 		/*
 		 * log("global population: " + numUnits); boolean haveNeighbors = false; for
@@ -118,44 +129,35 @@ public class MyRobot extends BCAbstractRobot {
 				numUnits++;
 				log("castle is signalling their location at " + (64 * me.y + me.x));
 				signal(64 * me.y + me.x, 2);
-				log("castle is singalling something else");
-				castleTalk(currentColonization);
+				castleTalk(currentColonization + 1);
 				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
 		}
 
-		if (numUnits >= numMines || fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+		if (/* numUnits >= numMines || */fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
 		}
 
-		for (int i = 0; i < allFuels.length; i++) {
+		for (int i = 0; i < mineClusterCenters.size(); i++) {
 			if (isMineColonized[i]) {
 				continue;
 			}
-			for (int[] adj : adjacentSpaces) {
-				int freeX = allFuels[i][0] + adj[0];
-				int freeY = allFuels[i][1] + adj[1];
-				if (freeX <= -1 || freeX >= fullMap[0].length || freeY <= -1 || freeY >= fullMap.length
-						|| fullMap[freeY][freeX] != PASSABLE || robotMap[freeY][freeX] > 0) {
+			int[] center = mineClusterCenters.get(i);
+			currentColonization = i;
+			isMineColonized[i] = true;
+			for (int[] move : adjacentSpaces) {
+				int buildX = me.x + move[0];
+				int buildY = me.y + move[1];
+				if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
+						|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
 					continue;
 				}
-				currentColonization = i;
-				isMineColonized[i] = true;
-				for (int[] move : adjacentSpaces) {
-					int buildX = me.x + move[0];
-					int buildY = me.y + move[1];
-					if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
-							|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
-						continue;
-					}
-					numUnits++;
-					log("signalling colonization spot at " + (64 * freeY + freeX));
-					signal(64 * freeY + freeX, 2);
-					log("signalling something else");
-					castleTalk(currentColonization);
-					return buildUnit(SPECS.PILGRIM, move[0], move[1]);
-				}
+				numUnits++;
+				log("signalling colonization spot at " + (64 * center[1] + center[0]));
+				signal(64 * center[1] + center[0], 2);
+				castleTalk(currentColonization + 1);
+				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
 		}
 		return null;
@@ -201,14 +203,12 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			log("gary go from (" + me.x + ", " + me.y + ") to (" + HOME[0] + ", " + HOME[1] + ")");
 			currentPath = bfs(HOME[0], HOME[1]);
-			log("gary found home");
 			if (currentPath == null) {
+				log("gary no found home");
 				return null;
 			}
 			int[] nextMove = currentPath.get(0);
-			log("gary baby steps");
 			int dx = nextMove[0] - me.x;
-			log("gary dxed");
 			int dy = nextMove[1] - me.y;
 			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE) {
 				currentPath.remove(0);
@@ -227,13 +227,13 @@ public class MyRobot extends BCAbstractRobot {
 		int[] location;
 		if (robotMap[HOME[1]][HOME[0]] > 0) {
 			/*
-			if (20 * numUnits > fuel) {
-				location = findClosestFuel();
-			} else {
-				location = findClosestKarbo();
-			}
-			*/
+			 * if (20 * numUnits > fuel) { location = findClosestFuel(); } else { location =
+			 * findClosestKarbo(); }
+			 */
 			location = findClosestMine();
+			if (!tilesInRange(location, HOME, mineClusterRadiusSqrd)) {
+				log("robot is straying away from base");
+			}
 		}
 
 		else {
@@ -268,6 +268,43 @@ public class MyRobot extends BCAbstractRobot {
 		return null;
 	}
 
+	private Action churchAction() {
+		if (me.turn == 1) {
+			fillAllMines();
+			getMineScores();
+			identifyClusters();
+			numUnits = 1;
+			HOME = new int[] {me.x, me.y};
+			int[] myMine = findClosestMine();
+			for (ArrayList<int[]> cluster : mineClusters) {
+				if (cluster.contains(myMine)) {
+					myMineScore = cluster.size();
+				}
+			}
+			log("church is awake with "+myMineScore+" mines");
+		}
+		if (numUnits < myMineScore) {
+			log("trying to build pilgrim");
+			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+				return null;
+			}
+			for (int[] move : adjacentSpaces) {
+				int buildX = me.x + move[0];
+				int buildY = me.y + move[1];
+				if (buildX <= -1 || buildX >= fullMap[0].length || buildY <= -1 || buildY >= fullMap.length
+						|| fullMap[buildY][buildX] == IMPASSABLE || robotMap[buildY][buildX] > 0) {
+					continue;
+				}
+				numUnits++;
+				log("church is signalling their location at " + (64 * me.y + me.x));
+				signal(64 * me.y + me.x, 2);
+				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
+			}
+		}
+		return null;
+	}
+	
 	public void getFullMap() {
 		boolean[][] p = getPassableMap();
 		boolean[][] k = getKarboniteMap();
@@ -317,30 +354,100 @@ public class MyRobot extends BCAbstractRobot {
 		}
 	}
 
-	// call this on turn 1 after getMineSpots
+	private void fillAllMines() {
+		allMines = new int[numKarbos + numFuels][];
+		int i = 0;
+		for (int[] mine : allKarbos) {
+			allMines[i] = mine;
+			i++;
+		}
+		for (int[] mine : allFuels) {
+			allMines[i] = mine;
+			i++;
+		}
+	}
+
+	// call this on turn 1 after fillAllMines
 	private void getMineScores() {
-		isMineColonized = new boolean[numFuels];
-		fuelMineScores = new int[numFuels];
+		allMineScores = new int[allMines.length];
 		int index = 0;
-		for (int[] fuel : allFuels) {
+		for (int[] check : allMines) {
 			int count = 0;
-			for (int dx = -2; dx <= 2; dx++) {
-				int checkX = fuel[0] + dx;
-				if (checkX <= -1 || checkX >= fullMap[0].length) {
+			for (int[] mine : allMines) {
+				if (tilesInRange(check, mine, mineClusterRadiusSqrd)) {
+					count++;
+				}
+			}
+			allMineScores[index++] = count;
+		}
+	}
+
+	private void identifyClusters() {
+		ArrayList<int[]> scannedMines = new ArrayList<>();
+		mineClusters = new ArrayList<>();
+		while (scannedMines.size() != allMines.length) {
+			int bestIndex = -1;
+			for (int i = 0; i < allMineScores.length; i++) {
+				if (scannedMines.contains(allMines[i])) {
 					continue;
 				}
-				for (int dy = -2; dy <= 2; dy++) {
-					int checkY = fuel[1] + dy;
-					if (checkY <= -1 || checkY >= fullMap.length) {
+				if (bestIndex == -1 || allMineScores[i] > allMineScores[bestIndex]) {
+					bestIndex = i;
+				}
+			}
+			int[] head = allMines[bestIndex];
+			ArrayList<int[]> currentCluster = new ArrayList<>();
+			currentCluster.add(head);
+			scannedMines.add(head);
+			for (int[] mine : allMines) {
+				if (scannedMines.contains(mine)) {
+					continue;
+				}
+				if (tilesInRange(head, mine, mineClusterRadiusSqrd)) {
+					currentCluster.add(mine);
+					scannedMines.add(mine);
+				}
+			}
+			mineClusters.add(currentCluster);
+		}
+	}
+
+	private void findClusterCenters() {
+		mineClusterCenters = new ArrayList<>();
+		for (ArrayList<int[]> cluster : mineClusters) {
+			int clusterSize = cluster.size();
+			double cumulativeX = 0.0;
+			double cumulativeY = 0.0;
+			for (int[] mine : cluster) {
+				cumulativeX += mine[0];
+				cumulativeY += mine[1];
+			}
+			int proposedX = (int) Math.round(cumulativeX / clusterSize);
+			int proposedY = (int) Math.round(cumulativeY / clusterSize);
+			int[] closestMatch = new int[] { 0, 0 };
+			int closestDistance = proposedX * proposedX + proposedY * proposedY;
+			for (int checkX = 0; checkX < fullMap[0].length; checkX++) {
+				for (int checkY = 0; checkY < fullMap.length; checkY++) {
+					if (fullMap[checkY][checkX] != PASSABLE) {
 						continue;
 					}
-					if (fullMap[checkY][checkX] > PASSABLE) {
-						count++;
+					int distance = (checkX - proposedX) * (checkX - proposedX)
+							+ (checkY - proposedY) * (checkY - proposedY);
+					if (distance < closestDistance) {
+						closestDistance = distance;
+						closestMatch[0] = checkX;
+						closestMatch[1] = checkY;
 					}
 				}
 			}
-			fuelMineScores[index++] = count;
+			mineClusterCenters.add(closestMatch);
 		}
+		isMineColonized = new boolean[mineClusterCenters.size()];
+	}
+
+	private boolean tilesInRange(int[] tile1, int[] tile2, int rangeSquared) {
+		return ((tile1[0] - tile2[0]) * (tile1[0] - tile2[0])
+				+ (tile1[1] - tile2[1]) * (tile1[1] - tile2[1]) <= rangeSquared);
 	}
 
 	private boolean getReflectionDir() {

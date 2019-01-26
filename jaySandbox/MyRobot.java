@@ -34,20 +34,23 @@ public class MyRobot extends BCAbstractRobot {
 	private int[] castleIDs = new int[3];
 	// Matrix of adjacent spaces, relative to the Robot
 	private final int[][] adjacentSpaces = new int[][] { new int[] { 0, 1 }, new int[] { -1, 1 }, new int[] { -1, 0 },
-			new int[] { -1, -1 }, new int[] { 0, -1 }, new int[] { 1, -1 }, new int[] { 1, 0 }, new int[] { 1, 1 } };
+			new int[] { -1, -1 }, new int[] { 0, -1 }, new int[] { 1, -1 }, new int[] { 1, 0 }, new int[] { 1, 1 } 
+	};
 
-	private ArrayList<int[]> mineClusterCenters = new ArrayList<>();
-	private ArrayList<ArrayList<int[]>> mineClusters = new ArrayList<>();
 	private ArrayList<int[]> scannedMines;
 	private int[][] allMines;
+	private ArrayList<ArrayList<int[]>> mineClusters = new ArrayList<>();
+	private ArrayList<int[]> mineClusterCenters = new ArrayList<>();
 	private ArrayList<int[]> openClusters = new ArrayList<>();
+	private ArrayList<int[]> clustersInUse = new ArrayList<>();
+	private boolean[] isClusterColonized;
 	
 	@Override
 	public Action turn() {
 		if (me.turn == 1) {
 			getFullMap();
 			getMineSpots();
-			getMineScores();
+			//getMineScores();
 			fillAllMines();
 			idenfityClusters();
 			findClusterCenters();
@@ -82,13 +85,12 @@ public class MyRobot extends BCAbstractRobot {
 				}
 			}
 
-			int[] myMine = findClosestFuel();
-			for (int i = 0; i < allFuels.length; i++) {
-				if (allFuels[i] == myMine) {
+			int[] myMine = findClosestCluster();
+			for (int i = 0; i < mineClusterCenters.size(); i++) {
+				if (mineClusterCenters.get(i) == myMine) {
 					// log("found my mine");
-					myMineScore = fuelMineScores[i];
 					currentColonization = i;
-					isMineColonized[i] = true;
+					isClusterColonized[i] = true;
 				}
 			}
 		}
@@ -103,18 +105,12 @@ public class MyRobot extends BCAbstractRobot {
 				castleIDs[i] = -1;
 				continue;
 			}
-			isMineColonized[castle.castle_talk] = true;
+			isClusterColonized[castle.castle_talk] = true;
 		}
-		/*
-		 * log("global population: " + numUnits); boolean haveNeighbors = false; for
-		 * (int[] move : adjacentSpaces) { int tryX = me.x + move[0]; int tryY = me.y +
-		 * move[1]; if (tryX <= -1 || tryX >= fullMap[0].length || tryY <= -1 || tryY >=
-		 * fullMap.length) { continue; } if (robotMap[tryY][tryX] > 0) { haveNeighbors =
-		 * true; break; } } if (haveNeighbors) { signal(numUnits, 2); }
-		 */
-		if (numUnits < myMineScore) {
+		
+		if (numUnits < mineClusters.get(currentColonization).size()) {
 			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
-					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + 50) {
 				return null;
 			}
 			for (int[] move : adjacentSpaces) {
@@ -138,8 +134,8 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 
-		for (int i = 0; i < allFuels.length; i++) {
-			if (isMineColonized[i]) {
+		for (int i = 0; i < mineClusterCenters.size(); i++) {
+			if (isClusterColonized[i]) {
 				continue;
 			}
 			for (int[] adj : adjacentSpaces) {
@@ -150,7 +146,7 @@ public class MyRobot extends BCAbstractRobot {
 					continue;
 				}
 				currentColonization = i;
-				isMineColonized[i] = true;
+				isClusterColonized[i] = true;
 				for (int[] move : adjacentSpaces) {
 					int buildX = me.x + move[0];
 					int buildY = me.y + move[1];
@@ -409,6 +405,7 @@ public class MyRobot extends BCAbstractRobot {
 			openClusters.add(center);
 		}
 		
+		isClusterColonized = new boolean[mineClusterCenters.size()];
 	}
 
 	private boolean getReflectionDir() {
@@ -531,6 +528,25 @@ public class MyRobot extends BCAbstractRobot {
 		return ans;
 	}
 
+	private int[] findClosestCluster()
+	{
+		int minDistance = fullMap.length * fullMap.length;
+		int[] ans = null;
+
+		for (int[] spot : mineClusterCenters) {
+			if (clustersInUse.contains(spot)) {
+				continue;
+			}
+			int dx = spot[0] - me.x;
+			int dy = spot[1] - me.y;
+			if (dx * dx + dy * dy < minDistance) {
+				ans = spot;
+				minDistance = dx * dx + dy * dy;
+			}
+		}
+		return ans;
+	}
+	
 	// bfs is reaaaally fast now
 	private ArrayList<int[]> bfs(int goalX, int goalY) {
 		boolean occupied = false;
