@@ -8,10 +8,7 @@ import java.util.LinkedList;
 
 public class MyRobot extends BCAbstractRobot {
 	// important
-	private final int IMPASSABLE = -1;
-	private final int PASSABLE = 0;
-	private final int KARBONITE = 1;
-	private final int FUEL = 2;
+	private final int IMPASSABLE = -1, PASSABLE = 0, KARBONITE = 1, FUEL = 2;
 	private boolean hRefl;
 	private int[][] fullMap; // 0: normal, 1: impassible, 2: karbonite, 3: fuel
 	private int[][] robotMap;
