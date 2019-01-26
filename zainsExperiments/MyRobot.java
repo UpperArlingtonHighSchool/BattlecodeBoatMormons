@@ -158,24 +158,28 @@ public class MyRobot extends BCAbstractRobot {
 
 		else if (me.turn == 849)
 		{
+			int numBuild = robs[0].size() + robs[1].size();
+
 			if(numCastles == 1)
 			{
-				signal(4096, (int) Math.floor(fullMap.length * fullMap.length / 4));
+				signal(4096, (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild));
 			}
 			else
 			{
-				signal(castleLocs[1][0] + castleLocs[1][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / 4));
+				signal(castleLocs[1][0] + castleLocs[1][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild));
 			}
 		}
-		else if (me.turn == 849)
+		else if (me.turn == 850)
 		{
+			int numBuild = robs[0].size() + robs[1].size();
+
 			if(numCastles <= 2)
 			{
-				signal(4096,  (int) Math.floor(fullMap.length * fullMap.length / 4));
+				signal(4096,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild));
 			}
 			else
 			{
-				signal(castleLocs[2][0] + castleLocs[2][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / 4));
+				signal(castleLocs[2][0] + castleLocs[2][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild));
 			}
 		}
 
