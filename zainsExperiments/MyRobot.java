@@ -259,11 +259,11 @@ public class MyRobot extends BCAbstractRobot {
 
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
 
-		if(me.turn < 850 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+		if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + robs[2].size() * 6 + robs[4].size() * 200 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE)
 		{
 			int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
 			// This is so all castles and churches build about the same amount.
-			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robs[0].size() + robs[1].size()) + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
+			if(fuel >= (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + robs[2].size() * 6 + robs[4].size() * 200) * (robs[0].size() + robs[1].size()) && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
 			{
 				doit = 0;
 			}
@@ -359,11 +359,11 @@ public class MyRobot extends BCAbstractRobot {
 
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
 
-		if(me.turn < 850 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+		if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + robs[2].size() * 6 + robs[4].size() * 200 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
 		{
 			int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
 			// This is so all castles and churches build about the same amount.
-			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robs[0].size() + robs[1].size()) + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
+			if(fuel >= (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + robs[2].size() * 6 + robs[4].size() * 200) * (robs[0].size() + robs[1].size()) && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
 			{
 				doit = 0;
 			}
