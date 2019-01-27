@@ -53,7 +53,7 @@ public class MyRobot extends BCAbstractRobot {
 	// For pilgrims
 	private ArrayList<int[]> karbosInUse = new ArrayList<>(); // logs karbos and fuels that other robots are on
 	private ArrayList<int[]> fuelsInUse = new ArrayList<>(); // you should clear these whenever the unit returns to a castle
-	private int home; // index of home castle
+	private int[] HOME;
 
 	// For pathing
 	private ArrayList<int[]> currentPath = null;
@@ -247,6 +247,7 @@ public class MyRobot extends BCAbstractRobot {
 			if(loc != null)
 			{
 				numLocalPilgs += 1;
+				signal(64 * me.y + me.x, 2);
 				castleTalk(currentColonization + 1);
 				return buildUnit(SPECS.PILGRIM, loc[0], loc[1]);
 			}
@@ -373,14 +374,12 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			int testX = me.x + move[0];
 			int testY = me.y + move[1];
-			if (testX <= -1 || testX >= fullMap[0].length || testY <= -1 || testY >= fullMap.length)
-			{
+			if (testX <= -1 || testX >= fullMap[0].length || testY <= -1 || testY >= fullMap.length) {
 				continue;
 			}
 			Robot maybe = getRobot(robotMap[testY][testX]);
 			if (robotMap[testY][testX] > 0 && (maybe.unit == SPECS.CASTLE || maybe.unit == SPECS.CHURCH)
-					&& maybe.team == me.team)
-			{
+					&& maybe.team == me.team) {
 				base = maybe;
 				karbosInUse.clear();
 				fuelsInUse.clear();
@@ -402,14 +401,15 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
-				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)
+		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY || me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)
 		{
-			if (base != null) {
+			if (base != null)
+			{
 				return give(base.x - me.x, base.y - me.y, me.karbonite, me.fuel);
 			}
-			currentPath = bfs(castleLocs[0][0], castleLocs[0][1]);
-			if (currentPath == null) {
+			currentPath = bfs(HOME[0], HOME[1]);
+			if (currentPath == null)
+			{
 				log("gary no found home");
 				return null;
 			}
@@ -421,46 +421,43 @@ public class MyRobot extends BCAbstractRobot {
 				currentPath.remove(0);
 				return move(dx, dy);
 			}
-			log("gary no go");
 			return null;
 		}
-		if ((fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) && robotMap[castleLocs[0][1]][castleLocs[0][0]] > 0)
+		if ((fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) && robotMap[HOME[1]][HOME[0]] > 0)
 		{
-			if (fuel == 0)
-			{
+			if (fuel == 0) {
 				return null;
 			}
 			return mine();
 		}
 		int[] location;
-		if (robotMap[castleLocs[0][1]][castleLocs[0][0]] > 0)
+		if (robotMap[HOME[1]][HOME[0]] > 0)
 		{
 			location = findClosestMine();
-			if (!tilesInRange(location, castleLocs[0], mineClusterRadiusSqrd))
+			if (!tilesInRange(location, HOME, mineClusterRadiusSqrd))
 			{
 				log("robot is straying away from base");
 			}
 		}
+
 		else
 		{
-			if (Math.abs(castleLocs[0][0] - me.x) + Math.abs(castleLocs[0][1] - me.y) == 1)
+			if (Math.abs(HOME[0] - me.x) + Math.abs(HOME[1] - me.y) == 1)
 			{
-				log("trying to build a church");
 				if (karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE
 						|| fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL)
 				{
 					return null;
 				}
-				log("BUILT A CHURCH");
-				return buildUnit(SPECS.CHURCH, castleLocs[0][0] - me.x, castleLocs[0][1] - me.y);
+				return buildUnit(SPECS.CHURCH, HOME[0] - me.x, HOME[1] - me.y);
 			}
-			robotMap[castleLocs[0][1]][castleLocs[0][0]] = 4096;
-			location = castleLocs[0];
+			robotMap[HOME[1]][HOME[0]] = 4096;
+			location = HOME;
 		}
 
 		if (location == null)
 		{
-			location = castleLocs[0];
+			location = HOME;
 		}
 
 		currentPath = bfs(location[0], location[1]);
@@ -476,6 +473,7 @@ public class MyRobot extends BCAbstractRobot {
 			currentPath.remove(0);
 			return move(dx, dy);
 		}
+		
 		return null;
 	}
 
@@ -754,6 +752,10 @@ public class MyRobot extends BCAbstractRobot {
 				castleLocs[0] = new int[] {rob.x, rob.y};
 				robs[0].add(rob.id);
 				globalTurn = rob.turn;
+				if(me.unit == SPECS.PILGRIM)
+				{
+					HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
+				}
 			}
 		}
 	}
