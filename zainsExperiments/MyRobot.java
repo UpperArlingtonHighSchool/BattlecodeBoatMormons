@@ -800,6 +800,9 @@ public class MyRobot extends BCAbstractRobot {
 					HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
 				}
 			}
+			else if (rob.unit == SPECS.CHURCH && me.unit == SPECS.PILGRIM) {
+				HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
+			}
 		}
 	}
 
