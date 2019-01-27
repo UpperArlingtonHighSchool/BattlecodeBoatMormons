@@ -807,6 +807,7 @@ public class MyRobot extends BCAbstractRobot {
 			else if (rob.unit == SPECS.CHURCH)
 			{
 				globalTurn = rob.turn;
+				robs[1].add(rob.id);
 
 				if(me.unit == SPECS.PILGRIM)
 				{
