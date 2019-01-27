@@ -337,7 +337,6 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		if (numLocalPilgs < myMineScore)
 		{
-			log("trying to build pilgrim");
 			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
 					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
 			{
@@ -405,7 +404,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		// If at carrying capacity for one resource, give it to base if possible, and otherwise make and follow path to HOMEs  
+		// If at carrying capacity for one resource, give it to base if possible, and otherwise make and follow path to HOME
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)
 		{
@@ -415,7 +414,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			
 			currentPath = bfs(HOME[0], HOME[1]);
-			if (currentPath == null)
+			if (currentPath == null || currentPath.size() == 0)
 			{
 				log("gary no found home");
 				return null;
@@ -429,11 +428,12 @@ public class MyRobot extends BCAbstractRobot {
 				currentPath.remove(0);
 				return move(dx, dy);
 			}
+			
 			return null;
 		}
 		
 		// If on a mine and can see your home, mine if you have fuel
-		if ((fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) && robotMap[HOME[1]][HOME[0]] > 0)
+		if (fullMap[me.y][me.x] >= KARBONITE  && robotMap[HOME[1]][HOME[0]] > 0)
 		{
 			if (fuel == 0)
 			{
@@ -454,7 +454,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		// If orthogonally adjacent to church destination, build it if you can. Then change robotMap?????? and set location to HOME
+		// If orthogonally adjacent to church destination, build it if you can. Then change robotMap and set location to HOME
 		else
 		{
 			if (Math.abs(HOME[0] - me.x) + Math.abs(HOME[1] - me.y) == 1)
