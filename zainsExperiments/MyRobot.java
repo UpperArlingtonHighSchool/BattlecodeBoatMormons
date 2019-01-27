@@ -125,6 +125,7 @@ public class MyRobot extends BCAbstractRobot {
 					isMineColonized[i] = true;
 				}
 			}
+			return null;
 		}
 
 		else if (me.turn == 2)
@@ -252,6 +253,7 @@ public class MyRobot extends BCAbstractRobot {
 					continue;
 				}
 				signal(64 * center[1] + center[0], 2);
+				numLocalPilgs += 1;
 				castleTalk(currentColonization + 1);
 				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
