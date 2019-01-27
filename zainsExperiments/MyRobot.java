@@ -125,7 +125,6 @@ public class MyRobot extends BCAbstractRobot {
 					isMineColonized[i] = true;
 				}
 			}
-			return null; //REMOVE THIS HERE
 		}
 
 		else if (me.turn == 2)
@@ -802,9 +801,21 @@ public class MyRobot extends BCAbstractRobot {
 				{
 					HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
 				}
+				else if(me.unit > 2)
+				{
+					HOME = new int[] {rob.x, rob.y};
+				}
 			}
-			else if (rob.unit == SPECS.CHURCH && me.unit == SPECS.PILGRIM) {
+			else if (rob.unit == SPECS.CHURCH)
+			{
+				if(me.unit == SPECS.PILGRIM)
+				{
 				HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
+				}
+				else if (me.unit > 2)
+				{
+					HOME = new int[] {rob.x, rob.y};
+				}
 			}
 		}
 	}
@@ -1589,7 +1600,7 @@ public class MyRobot extends BCAbstractRobot {
 
 	private boolean isNextToHome(int newX, int newY)
 	{
-		if(Math.abs(newX - castleLocs[0][0]) <= 1 && Math.abs(newY - castleLocs[0][1]) <= 1)
+		if(Math.abs(newX - HOME[0]) <= 1 && Math.abs(newY - HOME[1]) <= 1)
 		{
 			return true;
 		}
