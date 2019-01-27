@@ -680,7 +680,8 @@ public class MyRobot extends BCAbstractRobot {
 					int[] mov = randomAdjSq();
 					if(mov != null)
 					{
-						if((me.x + mov[0] + me.y + mov[1]) % 2 == 0)
+						int newX = me.x + mov[0], newY = me.y + mov[1];
+						if(fullMap[newY][newX] == 0 && (newX + newY) % 2 == 0 && !isNextToHome(newX, newY))
 						{
 							arrived = true;
 						}
@@ -691,7 +692,8 @@ public class MyRobot extends BCAbstractRobot {
 
 				int[] mov = new int[] {currentPath.get(locInPath)[0] - me.x, currentPath.get(locInPath)[1] - me.y};
 				locInPath += 1;
-				if((me.x + mov[0] + me.y + mov[1]) % 2 == 0 && !isNextToHome(me.x + mov[0], me.y + mov[1]))
+				int newX = me.x + mov[0], newY = me.y + mov[1];
+				if(fullMap[newY][newX] == 0 && (newX + newY) % 2 == 0 && !isNextToHome(newX, newY))
 				{
 					arrived = true;
 				}
