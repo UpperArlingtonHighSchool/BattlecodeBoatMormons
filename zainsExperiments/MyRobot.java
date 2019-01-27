@@ -370,7 +370,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		// If next to a building, set base and clear karbosInUse and fuelsInUse
 		Robot base = null;
-		/*for (int[] move : adjacentSpaces)
+		for (int[] move : adjacentSpaces)
 		{
 			int testX = me.x + move[0];
 			int testY = me.y + move[1];
@@ -386,7 +386,7 @@ public class MyRobot extends BCAbstractRobot {
 				karbosInUse.clear();
 				fuelsInUse.clear();
 			}
-		}*/
+		}
 
 		// Follow currentPath if it's valid and you have fuel
 		if (currentPath != null && currentPath.size() > 0)
@@ -408,10 +408,10 @@ public class MyRobot extends BCAbstractRobot {
 		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
 				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)
 		{
-			/*if (base != null)
+			if (base != null)
 			{
 				return give(base.x - me.x, base.y - me.y, me.karbonite, me.fuel);
-			}*/
+			}
 			
 			currentPath = bfs(HOME[0], HOME[1]);
 			if (currentPath == null || currentPath.size() == 0)
