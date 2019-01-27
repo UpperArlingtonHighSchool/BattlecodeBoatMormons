@@ -125,7 +125,6 @@ public class MyRobot extends BCAbstractRobot {
 					isMineColonized[i] = true;
 				}
 			}
-
 			return null; //REMOVE THIS HERE
 		}
 
@@ -181,32 +180,7 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 		}
 
-		else if (me.turn == 849)
-		{
-			int numBuild = robs[0].size() + robs[1].size();
-
-			if(numCastles == 1)
-			{
-				signal(4096, (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
-			}
-			else
-			{
-				signal(castleLocs[1][0] + castleLocs[1][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
-			}
-		}
-		else if (me.turn == 850)
-		{
-			int numBuild = robs[0].size() + robs[1].size();
-
-			if(numCastles <= 2)
-			{
-				signal(4096,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
-			}
-			else
-			{
-				signal(castleLocs[2][0] + castleLocs[2][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
-			}
-		}
+		massSignal();
 
 
 		// Every turn
@@ -221,21 +195,26 @@ public class MyRobot extends BCAbstractRobot {
 		// Just a log
 		if(me.turn % 20 == 0)
 		{
-			log("Turn: " + me.turn + ". Pilgrim population: " + robs[2].size() + ". Prophet population:  " + robs[4].size() + ". Pilgrim limit: " + numMines + ".");
+			log("Turn: " + me.turn + ". Pilgrim population: " + robs[2].size() + ". Prophet population:  " + robs[4].size() + ". Churches: " + robs[1].size() + ".");
 		}
 
 		// Defend if under attack
-		int[] atk = autoAttack();
-		if(atk != null)
+		if(seeEnemies())
 		{
-			int[] loc = availAdjSq(new int[] {atk[0] > 0 ? 1 : (atk[0] < 0 ? -1 : 0), atk[1] > 0 ? 1 : (atk[1] < 0 ? -1 : 0)});
+			int[] loc = randomAdjSq();
 
-			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM && loc != null)
+			if(karbonite >= 30 && fuel >= 50 && loc != null)
 			{
 				return buildUnit(3, loc[0], loc[1]);
 			}
 
-			return attack(atk[0], atk[1]);
+			int[] atk = autoAttack();
+			if(atk != null)
+			{
+				return attack(atk[0], atk[1]);
+			}
+
+			return null;
 		}
 
 		if (numLocalPilgs < myMineScore) {
@@ -278,32 +257,32 @@ public class MyRobot extends BCAbstractRobot {
 				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
 		}
-		/*
+
 		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
 
-			if(me.turn < 850 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+		if(me.turn < 850 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+		{
+			int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
+			// This is so all castles and churches build about the same amount.
+			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robs[0].size() + robs[1].size()) + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
 			{
-				int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
-				// This is so all castles and churches build about the same amount.
-				if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robs[0].size() + robs[1].size()) + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
-				{
-					doit = 0;
-				}
-				else
-				{
-					doit = (int) (Math.random() * (robs[0].size() + robs[1].size()));
-				}
+				doit = 0;
+			}
+			else
+			{
+				doit = (int) (Math.random() * (robs[0].size() + robs[1].size()));
+			}
 
-				if(doit == 0)
+			if(doit == 0)
+			{
+				int[] loc = randomAdjSq();
+				if(loc != null)
 				{
-					int[] loc = randomAdjSq();
-					if(loc != null)
-					{
-						return buildUnit(4, loc[0], loc[1]);
-					}
+					return buildUnit(4, loc[0], loc[1]);
 				}
 			}
-		 */
+		}
+
 
 		return null; //default
 	}
@@ -333,8 +312,30 @@ public class MyRobot extends BCAbstractRobot {
 					myMineScore = cluster.size();
 				}
 			}
-			log("church is awake with "+myMineScore+" mines");
 		}
+
+		massSignal();
+
+
+		// Defend if under attack
+		if(seeEnemies())
+		{
+			int[] loc = randomAdjSq();
+
+			if(karbonite >= 30 && fuel >= 50 && loc != null)
+			{
+				return buildUnit(3, loc[0], loc[1]);
+			}
+
+			int[] atk = autoAttack();
+			if(atk != null)
+			{
+				return attack(atk[0], atk[1]);
+			}
+
+			return null;
+		}
+
 		if (numLocalPilgs < myMineScore)
 		{
 			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
@@ -352,11 +353,36 @@ public class MyRobot extends BCAbstractRobot {
 					continue;
 				}
 				numLocalPilgs++;
-				log("church is signalling their location at " + (64 * me.y + me.x));
 				signal(64 * me.y + me.x, 2);
 				return buildUnit(SPECS.PILGRIM, move[0], move[1]);
 			}
 		}
+
+		// If there's enough pilgrims and some extra fuel (enough for all pilgrims to move max distance 1.5 times), build a prophet.
+
+		if(me.turn < 850 && fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE)
+		{
+			int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
+			// This is so all castles and churches build about the same amount.
+			if(fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL * (robs[0].size() + robs[1].size()) + 2 + robs[2].size() * 6 && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
+			{
+				doit = 0;
+			}
+			else
+			{
+				doit = (int) (Math.random() * (robs[0].size() + robs[1].size()));
+			}
+
+			if(doit == 0)
+			{
+				int[] loc = randomAdjSq();
+				if(loc != null)
+				{
+					return buildUnit(4, loc[0], loc[1]);
+				}
+			}
+		}
+
 		return null;
 	}
 
@@ -378,7 +404,7 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				continue;
 			}
-			
+
 			Robot maybe = getRobot(robotMap[testY][testX]);
 			if (robotMap[testY][testX] > 0 && (maybe.unit == SPECS.CASTLE || maybe.unit == SPECS.CHURCH)
 					&& maybe.team == me.team) {
@@ -412,14 +438,14 @@ public class MyRobot extends BCAbstractRobot {
 			{
 				return give(base.x - me.x, base.y - me.y, me.karbonite, me.fuel);
 			}
-			
+
 			currentPath = bfs(HOME[0], HOME[1]);
 			if (currentPath == null || currentPath.size() == 0)
 			{
 				log("gary no found home");
 				return null;
 			}
-			
+
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
@@ -428,10 +454,10 @@ public class MyRobot extends BCAbstractRobot {
 				currentPath.remove(0);
 				return move(dx, dy);
 			}
-			
+
 			return null;
 		}
-		
+
 		// If on a mine and can see your home, mine if you have fuel
 		if (fullMap[me.y][me.x] >= KARBONITE  && robotMap[HOME[1]][HOME[0]] > 0)
 		{
@@ -442,7 +468,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			return mine();
 		}
-		
+
 		// Set location to closest mine, and log if it's far away from HOME (I think)
 		int[] location;
 		if (robotMap[HOME[1]][HOME[0]] > 0)
@@ -490,7 +516,7 @@ public class MyRobot extends BCAbstractRobot {
 			currentPath.remove(0);
 			return move(dx, dy);
 		}
-		
+
 		return null;
 	}
 
@@ -968,6 +994,18 @@ public class MyRobot extends BCAbstractRobot {
 		return new int[] {getRobot(lowestID).x - me.x, getRobot(lowestID).y - me.y};
 	}
 
+	private boolean seeEnemies() // for buildings
+	{
+		Robot[] robs = getVisibleRobots();
+		for(Robot rob : robs)
+		{
+			if(rob.team != me.team && rob.unit != 2)
+			{
+				return true;
+			}
+		}
+	}
+
 	// For preacherAttack()
 	private Robot[] getPreacherKillableRobots() // Now returns only units with max health <= 20 in visibility range, but
 	// can be edited
@@ -1170,7 +1208,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(finalBestLoc[0] == -1)
 		{
-			log("aha!");
+			log("something wrong in preacherAttack()");
 			return null;
 		}
 
@@ -1277,8 +1315,8 @@ public class MyRobot extends BCAbstractRobot {
 			}
 
 			spot = spots.poll();
-			if (spot == null) {
-				// log("exhausted all options");
+			if (spot == null)
+			{
 				return null;
 			}
 		}
@@ -1916,5 +1954,35 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return ans;
+	}
+
+	private void massSignal() // for buildings
+	{
+		if (me.turn == 849)
+		{
+			int numBuild = robs[0].size() + robs[1].size();
+
+			if(numCastles == 1)
+			{
+				signal(4096, (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
+			}
+			else
+			{
+				signal(castleLocs[1][0] + castleLocs[1][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
+			}
+		}
+		else if (me.turn == 850)
+		{
+			int numBuild = robs[0].size() + robs[1].size();
+
+			if(numCastles <= 2)
+			{
+				signal(4096,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
+			}
+			else
+			{
+				signal(castleLocs[2][0] + castleLocs[2][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
+			}
+		}
 	}
 }
