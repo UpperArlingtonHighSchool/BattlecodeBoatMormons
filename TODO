@@ -1,7 +1,1 @@
-- decrease numPilgrims when pilgrims die
-
-- Make preachers move
-	
-- Maybe fix locations comms?
-	
 - Add to BFS ability to avoid region (example use: pilgrims don't go w/i range of enemy castle)
