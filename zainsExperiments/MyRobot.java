@@ -390,7 +390,7 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		if (me.turn == 1)
 		{
-			getHomeCastle();
+			//getHomeCastle();
 			getEnemyCastleLocs();
 		}
 
@@ -411,6 +411,9 @@ public class MyRobot extends BCAbstractRobot {
 				base = maybe;
 				karbosInUse.clear();
 				fuelsInUse.clear();
+				if (me.turn == 1 && isRadioing(base)) {
+					HOME = new int[] { maybe.signal % 64, (int) (maybe.signal / 64) };
+				}
 			}
 		}
 
