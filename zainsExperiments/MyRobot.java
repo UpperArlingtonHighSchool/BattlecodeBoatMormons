@@ -263,7 +263,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			int doit; // If there's lots of resources, definitely build. If only a little, maybe build one.
 			// This is so all castles and churches build about the same amount.
-			if(fuel >= (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + robs[2].size() * 6 + robs[4].size() * 200) * (robs[0].size() + robs[1].size()) && karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE * robs[0].size())
+			if(fuel >= (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + robs[2].size() * 6 + robs[4].size() * 200) * (robs[0].size() + robs[1].size()) && karbonite >= (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE) * robs[0].size())
 			{
 				doit = 0;
 			}
