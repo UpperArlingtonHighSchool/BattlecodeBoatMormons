@@ -443,13 +443,14 @@ public class MyRobot extends BCAbstractRobot {
 			return mine();
 		}
 		
-		// Set location to closest mine, and log if it's far away from HOME (I think)
+		// Set location to closest mine, and log if it's far away from HOME (which happens if an enemy is near)
 		int[] location;
 		if (robotMap[HOME[1]][HOME[0]] > 0)
 		{
 			location = findClosestMine();
 			if (!tilesInRange(location, HOME, mineClusterRadiusSqrd))
 			{
+				// this means an enemy is occupying a mine tile in the cluster
 				log("robot is straying away from base");
 			}
 		}
