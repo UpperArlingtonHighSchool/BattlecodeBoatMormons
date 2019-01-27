@@ -188,26 +188,8 @@ public class MyRobot extends BCAbstractRobot {
 
 		// Every turn
 
-		// Update robs[2].size() and castle deaths
-		if(me.turn > 3)
-		{
-			for(int castNum = 0; castNum < robs[0].size(); castNum++)
-			{
-				Robot castle = getCastObj(castNum);
-				if (castNum != 0 && castle == null)
-				{
-					log("yup");
-					ourDeadCastles += 1;
-					robs[0].remove(castNum);
-				}
-
-				int talk = castle.castle_talk;
-				if(talk >= 1 && talk <= 5)
-				{
-					getNewUnit(talk);
-				}
-			}
-		}
+		
+		updateRobs();
 
 		// Just a log
 		if(me.turn % 20 == 0)
@@ -223,7 +205,6 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(karbonite >= 30 && fuel >= 50 && getRobot(robotMap[me.y + atk[1]][me.x + atk[0]]).unit != SPECS.PILGRIM && loc != null)
 			{
-				castleTalk(3);
 				return buildUnit(3, loc[0], loc[1]);
 			}
 
@@ -257,7 +238,6 @@ public class MyRobot extends BCAbstractRobot {
 					int[] loc = randomAdjSq();
 					if(loc != null)
 					{
-						castleTalk(4);
 						return buildUnit(4, loc[0], loc[1]);
 					}
 				}
@@ -270,7 +250,6 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(loc != null)
 		{
-			castleTalk(2);
 			return buildUnit(SPECS.PILGRIM, loc[0], loc[1]);
 		}
 
@@ -1603,5 +1582,62 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 		return null;
+	}
+
+	private void updateRobs() // for castles
+	{
+		Robot[] visb = getVisibleRobots();
+		ArrayList<Integer> unchecked = new ArrayList<Integer>();
+		for(int i = 0; i < 6; i++)
+		{
+			unchecked.addAll(robs[i]);
+		}
+
+		for(Robot r : visb)
+		{
+			if(r.team == me.team)
+			{
+				if(unchecked.contains(r.id))
+				{
+					unchecked.remove(r.id);
+				}
+				else
+				{
+					int sig;
+					boolean succ = false;
+					for(int i = 0; i < robs[0].size(); i++)
+					{
+						sig = getCastObj(0).castle_talk; 
+
+						if(sig % 4096 + 1 == r.id)
+						{
+							robs[(int) Math.floor(sig /  4096)].add(r.id);
+							succ = true;
+							break;
+						}
+					} 
+					if(!succ)
+					{
+						log("somebody didn't signal for new robot :(");
+					}
+				}
+			}
+		}
+
+		for(Integer dead : unchecked)
+		{
+			for(int i = 0; i < 6; i++)
+			{
+				if(robs[i].contains(dead))
+				{
+					robs[i].remove(dead);
+					if(i == 0)
+					{
+						ourDeadCastles += 1;
+					}
+					break;
+				}
+			}
+		}
 	}
 }
