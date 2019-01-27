@@ -369,14 +369,17 @@ public class MyRobot extends BCAbstractRobot {
 			getEnemyCastleLocs();
 		}
 
+		// If next to a building, set base and clear karbosInUse and fuelsInUse
 		Robot base = null;
 		for (int[] move : adjacentSpaces)
 		{
 			int testX = me.x + move[0];
 			int testY = me.y + move[1];
-			if (testX <= -1 || testX >= fullMap[0].length || testY <= -1 || testY >= fullMap.length) {
+			if(!isOnMap(testX, testY))
+			{
 				continue;
 			}
+			
 			Robot maybe = getRobot(robotMap[testY][testX]);
 			if (robotMap[testY][testX] > 0 && (maybe.unit == SPECS.CASTLE || maybe.unit == SPECS.CHURCH)
 					&& maybe.team == me.team) {
@@ -386,6 +389,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
+		// Follow currentPath if it's valid and you have fuel
 		if (currentPath != null && currentPath.size() > 0)
 		{
 			int[] nextMove = currentPath.get(0);
@@ -401,18 +405,22 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY || me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)
+		// If at carrying capacity for one resource, give it to base if possible, and otherwise make and follow path to HOMEs  
+		if (me.karbonite == SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY
+				|| me.fuel == SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)
 		{
 			if (base != null)
 			{
 				return give(base.x - me.x, base.y - me.y, me.karbonite, me.fuel);
 			}
+			
 			currentPath = bfs(HOME[0], HOME[1]);
 			if (currentPath == null)
 			{
 				log("gary no found home");
 				return null;
 			}
+			
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
@@ -423,13 +431,19 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			return null;
 		}
+		
+		// If on a mine and can see your home, mine if you have fuel
 		if ((fullMap[me.y][me.x] == KARBONITE || fullMap[me.y][me.x] == FUEL) && robotMap[HOME[1]][HOME[0]] > 0)
 		{
-			if (fuel == 0) {
+			if (fuel == 0)
+			{
+				log("can't mine b/c no fuel :'(");
 				return null;
 			}
 			return mine();
 		}
+		
+		// Set location to closest mine, and log if it's far away from HOME (I think)
 		int[] location;
 		if (robotMap[HOME[1]][HOME[0]] > 0)
 		{
@@ -440,6 +454,7 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
+		// If orthogonally adjacent to church destination, build it if you can. Then change robotMap?????? and set location to HOME
 		else
 		{
 			if (Math.abs(HOME[0] - me.x) + Math.abs(HOME[1] - me.y) == 1)
@@ -455,11 +470,13 @@ public class MyRobot extends BCAbstractRobot {
 			location = HOME;
 		}
 
+		// Duh
 		if (location == null)
 		{
 			location = HOME;
 		}
 
+		// Make and follow path to location
 		currentPath = bfs(location[0], location[1]);
 		if (currentPath == null)
 		{
