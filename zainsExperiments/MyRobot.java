@@ -389,7 +389,6 @@ public class MyRobot extends BCAbstractRobot {
 	{
 		if (me.turn == 1)
 		{
-			//getHomeCastle();
 			getEnemyCastleLocs();
 		}
 
@@ -524,7 +523,6 @@ public class MyRobot extends BCAbstractRobot {
 
 	private Action crusader()
 	{
-
 		if (me.turn == 1)
 		{
 			getHomeCastle();
@@ -808,9 +806,11 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			else if (rob.unit == SPECS.CHURCH)
 			{
+				globalTurn = rob.turn;
+
 				if(me.unit == SPECS.PILGRIM)
 				{
-				HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
+					HOME = new int[] { rob.signal % 64, (int) (rob.signal / 64) };
 				}
 				else if (me.unit > 2)
 				{
