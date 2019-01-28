@@ -203,7 +203,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			int[] loc = randomAdjSq();
 
-			if(karbonite >= 15 && fuel >= 50 && loc != null)
+			if(karbonite >= 15 && fuel >= 50 && loc != null && !tooManyCrusaders())
 			{
 				return buildUnit(3, loc[0], loc[1]);
 			}
@@ -323,7 +323,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			int[] loc = randomAdjSq();
 
-			if(karbonite >= 15 && fuel >= 50 && loc != null)
+			if(karbonite >= 15 && fuel >= 50 && loc != null && !tooManyCrusaders())
 			{
 				return buildUnit(3, loc[0], loc[1]);
 			}
@@ -1020,11 +1020,13 @@ public class MyRobot extends BCAbstractRobot {
 		Robot[] robs = getVisibleRobots();
 		for(Robot rob : robs)
 		{
-			if(rob.team != me.team && rob.unit != 2)
+			if(rob.team != me.team)
 			{
 				return true;
 			}
 		}
+
+		return false;
 	}
 
 	// For preacherAttack()
@@ -2005,5 +2007,21 @@ public class MyRobot extends BCAbstractRobot {
 				signal(castleLocs[2][0] + castleLocs[2][1] * 64,  (int) Math.floor(fullMap.length * fullMap.length / numBuild / numBuild * 2));
 			}
 		}
+	}
+
+	private boolean tooManyCrusaders()
+	{
+		Robot[] visb = getVisibleRobots();
+		int crus = 0;
+
+		for(Robot rob : visb)
+		{
+			if(rob.unit == 3)
+			{
+				crus += 1;
+			}
+		}
+
+		return crus > 6;
 	}
 }
