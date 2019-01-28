@@ -192,12 +192,6 @@ public class MyRobot extends BCAbstractRobot {
 			isMineColonized[getCastObj(i).castle_talk - 1] = true;
 		}
 
-		// Just a log
-		if(me.turn % 20 == 0)
-		{
-			log("Turn: " + me.turn + ". Pilgrim population: " + robs[2].size() + ". Prophet population:  " + robs[4].size() + ". Churches: " + robs[1].size() + ".");
-		}
-
 		// Defend if under attack
 		if(seeEnemies())
 		{
@@ -465,7 +459,6 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if (fuel == 0)
 			{
-				log("can't mine b/c no fuel :'(");
 				return null;
 			}
 			return mine();
@@ -476,10 +469,6 @@ public class MyRobot extends BCAbstractRobot {
 		if (robotMap[HOME[1]][HOME[0]] > 0)
 		{
 			location = findClosestMine();
-			if (!tilesInRange(location, HOME, mineClusterRadiusSqrd))
-			{
-				log("robot is straying away from base");
-			}
 		}
 
 		// If orthogonally adjacent to church destination, build it if you can. Then change robotMap and set location to HOME
@@ -560,7 +549,6 @@ public class MyRobot extends BCAbstractRobot {
 
 			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 			{
-				log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
 				if(fuel >= numMines * 2) // leave fuel for mining
 				{
 					int[] mov = randomAdjSq();
@@ -635,7 +623,6 @@ public class MyRobot extends BCAbstractRobot {
 
 			if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 			{
-				log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
 				if(fuel >= numMines * 2) // leave fuel for mining
 				{
 					int[] mov = randomAdjSq();
@@ -676,8 +663,6 @@ public class MyRobot extends BCAbstractRobot {
 
 				if (currentPath == null || currentPath.size() <= locInPath || robotMap[currentPath.get(locInPath)[1]][currentPath.get(locInPath)[0]] > 0)
 				{
-					log("Prophet BFS returned null (or something invalid). Turn: " + globalTurn);
-
 					int[] mov = randomAdjSq();
 					if(mov != null)
 					{
@@ -785,7 +770,6 @@ public class MyRobot extends BCAbstractRobot {
 			}
 		}
 
-		log("it's frickin reflected both ways >:(");
 		return true;
 	}
 
@@ -950,10 +934,6 @@ public class MyRobot extends BCAbstractRobot {
 
 			targetCastle = fullMap[22][17] == 0 ? 2 : 0;
 		}
-		else
-		{
-			log("uh oh numCastles is " + numCastles);
-		}
 	}
 
 	private Robot[] getEnemiesInRange() {
@@ -1001,7 +981,6 @@ public class MyRobot extends BCAbstractRobot {
 		if (priorRobs.size() == 1) {
 			return new int[] {priorRobs.get(0).x - me.x, priorRobs.get(0).y - me.y};
 		} else if (priorRobs.size() == 0) {
-			log("why are there no enemies and yet autoAttack() has gotten all the way here");
 			return null;
 		}
 
@@ -1231,7 +1210,6 @@ public class MyRobot extends BCAbstractRobot {
 
 		if(finalBestLoc[0] == -1)
 		{
-			log("something wrong in preacherAttack()");
 			return null;
 		}
 
@@ -1422,7 +1400,6 @@ public class MyRobot extends BCAbstractRobot {
 			}
 			spot = spots.poll();
 			if (spot == null) {
-				//log("exhausted all options");
 				return null;
 			}
 		}
@@ -1452,7 +1429,6 @@ public class MyRobot extends BCAbstractRobot {
 		}
 		else // NOTE: THIS WILL NOT CATCH ALL INVALID TARGETS, ONLY INVALID TARGET[0]S
 		{
-			log("That is not a valid target for availAdjSq(). Returning null.");
 			return null;
 		}
 
@@ -1466,7 +1442,6 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			if(delta >= 8)
 			{
-				log("No adjacent movable spaces (from availAdjSq()).");
 				return null;
 			}
 
@@ -1498,7 +1473,6 @@ public class MyRobot extends BCAbstractRobot {
 
 			if(i >= 8)
 			{
-				//				log("No adjacent movable spaces (from randomAdjSq()).");
 				return null;
 			}
 		}
@@ -1788,10 +1762,6 @@ public class MyRobot extends BCAbstractRobot {
 				else if(r.turn == 1)
 				{
 					robs[r.castle_talk].add(r.id);
-				}
-				else if(r.turn > 1)
-				{
-					log("Turn: " + me.turn + ". Robot " + r.id + " is not in robs after their first turn.");
 				}
 			}
 		}
