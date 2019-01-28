@@ -203,7 +203,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			int[] loc = randomAdjSq();
 
-			if(karbonite >= 30 && fuel >= 50 && loc != null)
+			if(karbonite >= 15 && fuel >= 50 && loc != null)
 			{
 				return buildUnit(3, loc[0], loc[1]);
 			}
@@ -218,7 +218,7 @@ public class MyRobot extends BCAbstractRobot {
 		}
 
 		if (numLocalPilgs < myMineScore) {
-			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + numMines
 					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 				return null;
 			}
@@ -233,7 +233,7 @@ public class MyRobot extends BCAbstractRobot {
 			return null;
 		}
 
-		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+		if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + numMines
 				|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
 			return null;
 		}
@@ -323,7 +323,7 @@ public class MyRobot extends BCAbstractRobot {
 		{
 			int[] loc = randomAdjSq();
 
-			if(karbonite >= 30 && fuel >= 50 && loc != null)
+			if(karbonite >= 15 && fuel >= 50 && loc != null)
 			{
 				return buildUnit(3, loc[0], loc[1]);
 			}
@@ -339,7 +339,7 @@ public class MyRobot extends BCAbstractRobot {
 
 		if (numLocalPilgs < myMineScore)
 		{
-			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + 2
+			if (fuel < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + numMines
 					|| karbonite < SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE)
 			{
 				return null;
@@ -425,7 +425,7 @@ public class MyRobot extends BCAbstractRobot {
 			int dy = nextMove[1] - me.y;
 			if (robotMap[nextMove[1]][nextMove[0]] <= 0)
 			{
-				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE)
+				if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + numMines)
 				{
 					currentPath.remove(0);
 					return move(dx, dy);
@@ -445,14 +445,13 @@ public class MyRobot extends BCAbstractRobot {
 			currentPath = bfs(HOME[0], HOME[1]);
 			if (currentPath == null || currentPath.size() == 0)
 			{
-				log("gary no found home");
 				return null;
 			}
 
 			int[] nextMove = currentPath.get(0);
 			int dx = nextMove[0] - me.x;
 			int dy = nextMove[1] - me.y;
-			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE)
+			if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + numMines)
 			{
 				currentPath.remove(0);
 				return move(dx, dy);
@@ -489,7 +488,7 @@ public class MyRobot extends BCAbstractRobot {
 			if (Math.abs(HOME[0] - me.x) + Math.abs(HOME[1] - me.y) == 1)
 			{
 				if (karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE
-						|| fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL)
+						|| fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL + numMines)
 				{
 					return null;
 				}
@@ -514,7 +513,7 @@ public class MyRobot extends BCAbstractRobot {
 		int[] nextMove = currentPath.get(0);
 		int dx = nextMove[0] - me.x;
 		int dy = nextMove[1] - me.y;
-		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE)
+		if (fuel >= (dx * dx + dy * dy) * SPECS.UNITS[SPECS.PILGRIM].FUEL_PER_MOVE + numMines)
 		{
 			currentPath.remove(0);
 			return move(dx, dy);
